@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        {% block head %}
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+        <title>{% block title %}Edoc{% endblock title %}</title>
+        <style>
+            html
+            {
+                position: relative;
+                min-height: 100%;
+            }
+            body
+            {
+                padding-top: 5%;
+                padding-bottom: 5%;
+                margin-bottom: 60px
+            }
+            .footer
+            {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                background-color: #f5f5f5;
+            }
+        </style>
+        {% endblock head %}
+		<script>
+			/**
+			 * Returns a random integer between min (inclusive) and max (inclusive)
+			 * Using Math.round() will give you a non-uniform distribution!
+			 */
+			function getRandomInt(min, max)
+			{
+				return Math.floor(Math.random() * (max - min + 1)) + min;
+			}
+			class Ring
+			{
+				constructor(pw, offset)
+				{
+					this.encodeRing = [];
+					this.decodeRing = [];
+					this.offset = offset;
+					this.pw = pw.slice();
+					for (let i=0; i<256; i++)
+					{
+						this.encodeRing.push(-1);
+						this.decodeRing.push(-1);
+					}
+					let index = 0;
+					while (this.pw.length < 256)
+					{
+						this.pw.push(this.pw[index]);
+						index = (index+1)%256;
+					}
+					index = 0;
+					for (let i=0; i<256; i++)
+					{
+						let emptyCounter = 0;
+						let maxEmpty = 256-i;
+						let targetEmpty = 1+(this.pw[i] % maxEmpty);
+						while (emptyCounter < targetEmpty)
+						{
+							if (this.encodeRing[index] == -1)
+							{
+								emptyCounter++;
+							}
+							if (emptyCounter < targetEmpty)
+							{
+								index = (index+1)%256;
+							}
+						}
+						this.encodeRing[index] = i;
+					}
+					for (let i=0; i<256; i++)
+					{
+						this.decodeRing[this.encodeRing[i]] = i;
+					}
+				}
+				encode(plain)
+				{
+					let index = (this.offset+plain)%256;
+					let encoded = this.encodeRing[index];
+					this.offset = (this.offset+1)%256;
+					return encoded;
+				}
+				decode(encoded)
+				{
+					let decoded = this.decodeRing[encoded] - this.offset;
+					if (decoded < 0)
+					{
+						decoded += 256;
+					}
+					this.offset = (this.offset+1)%256;
+					return decoded;
+				}
+			}
+			class Torus
+			{
+				constructor(pw, offsets, seed)
+				{
+					if (typeof offsets == "undefined")
+					{
+						offsets = [];
+						for (let i=0; i<8; i++)
+						{ 
+							offsets.push(getRandomInt(0, 255));
+						}
+					}
+					if (typeof seed == "undefined")
+					{
+						seed = [];
+						for (let i=0; i<256; i++)
+						{ 
+							seed.push(getRandomInt(0, 255));
+						}
+					}
+					this.rings = [];
+					this.seed = seed.slice();
+					this.pw = pw.slice();
+					for (let i=0; i<8; i++)
+					{
+						let ring = new Ring(this.pw, offsets[i]);
+						this.rings.push(ring);
+						this.pw.push(this.pw.shift());
+					}
+				}
+				encode(plain)
+				{
+					let length = plain.length;
+					while (plain.length%256 != 0)
+					{
+						plain.push(getRandomInt(0, 255));
+					}
+					let data = [];
+					let processedBytes = 0;
+					while (processedBytes < plain.length)
+					{
+						for (let i=0; i<256; i++)
+						{
+							let encoded = plain[i] ^ this.seed[i];
+							for (let j=0; j<8; j++)
+							{ 
+								if (this.seed[i] & 1<<j != 0)
+								{
+									let ring = this.rings[j];
+									encoded = ring.encode(encoded);
+								}
+							}
+							data.push(encoded);
+							processedBytes++;
+						}
+						for (let i=0; i<128; i++)
+						{
+							this.seed[i] = plain[processedBytes-256+i] ^ plain[processedBytes-256+i+128];
+							this.seed[i+128] = plain[processedBytes-256+i+128-64] ^ plain[processedBytes-256+i+128-64];
+						}
+					}
+					let ret = {"length":length,"data":data};
+					return ret;
+				}
+				decode(encoded)
+				{
+					let data = encoded["data"];
+					let length = encoded["length"];
+					let ret = [];
+					for (let i=0; i<length; i++)
+					{
+						let decoded = data[i];
+						for (let j=8-1; j>=0; j--)
+						{ 
+							if (this.seed[i%256] & 1<<j != 0)
+							{
+								let ring = this.rings[j];
+								decoded = ring.decode(decoded);
+							}
+						}
+						decoded = decoded ^ this.seed[i%256];
+						ret.push(decoded);
+						if (i%256 == 256-1)
+						{
+							for (let j=0; j<128; j++)
+							{
+								this.seed[j] = ret[i-256+j+1] ^ ret[i-256+j+128+1];
+								this.seed[j+128] = ret[i-256+j+128+1-64] ^ ret[i-256+j+128+1-64];
+							}
+						}
+					}
+					return ret;
+				}
+				getOffsets()
+				{
+					let offsets = [];
+					for (let i=0; i<8; i++)
+					{
+						offsets.push(this.rings[i].offset);
+					}
+					return offsets;
+				}
+				getSeed()
+				{
+					return this.seed.slice();
+				}
+				setOffsets(offsets)
+				{
+					for (let i=0; i<8; i++)
+					{
+						this.rings[i].offset = offsets[i];
+					}
+				}
+				setSeed(seed)
+				{
+					this.seed = seed.splice();
+				}
+			}
+			function send()
+			{
+				let input = document.getElementById("input");
+				let json = {};
+				json["username"] = username;
+				if (torus === null)
+				{
+					json["encoded"] = false;
+					json["plainMessage"] = input.value;
+				}
+				else
+				{
+					json["encoded"] = true;
+					json["offsets"] = torus.getOffsets();
+					json["seed"] = torus.getSeed();
+					let plainMessage = [];
+					for (let i=0; i<message.length; i++)
+					{
+						plainMessage.push(message.charCodeAt(i));
+					}
+					let encodedMessage = torus.encode(plainMessage);
+					json["encodedMessage"] = encodedMessage;
+				}
+				input.value = "";
+				socket.emit("sendMessage", json);
+			}
+			function usePassword()
+			{
+				let password = document.getElementById("password").value;
+				updatePassword(password);
+			}
+			function usePasswordFile()
+			{
+				let begin = parseInt(document.getElementById("begin").value);
+				let length = parseInt(document.getElementById("length").value);
+				if (passwordFileContent.length >= begin+length)
+				{
+					let password = passwordFileContent.substring(begin, begin+length);
+					updatePassword(password);
+				}
+				else
+				{
+					alert(passwordFileContent.length);
+				}
+			}
+			function updatePassword(pw)
+			{
+				let asInt = [];
+				for (let i=0; i<pw.length; i++)
+				{
+					asInt.push(pw.charCodeAt(i));
+				}
+				torus = new Torus(asInt);
+			}
+			function useUsername()
+			{
+				username = document.getElementById("username").value;
+			}
+			function readSingleFile(e)
+			{
+				var file = e.target.files[0];
+				if (!file)
+				{
+					return;
+				}
+				var reader = new FileReader();
+				reader.onload = function(e)
+				{
+					passwordFileContent = e.target.result;
+				};
+				reader.readAsText(file);
+			}
+		</script>
+    </head>
+    <body>
+        {% block body %}
+            {% block bodycontent %}
+            <div class='container'>
+                <div class='row'>
+                    <div class='col-xs-12'>
+						<form>
+							Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
+							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
+							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="256" min="1" max ="256"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
+							<textarea disabled rows="30" cols="100" id="output"></textarea><br/>
+							<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
+						</form>
+						<script>
+							let username = "Unknown User";//TODO load/store local db
+							document.getElementById("username").value = username;
+							let torus = null;
+							let passwordFileContent = "";
+							document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
+							let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+							socket.open();
+							socket.on("receiveMessage", function(json)
+							{
+								let user = json["username"];
+								let encoded = json["encoded"];
+								let message = "";
+								if (encoded)
+								{
+									let offsets = json["offsets"];
+									let seed = json["seed"];
+									torus.setSeed(seed);
+									torus.setOffsets(offsets);
+									let encodedMessage = json["encodedMessage"];
+									let decodedMessage = torus.decode(encodedMessage);
+									message = "["+user+"] ";
+									for (let i=0; i<decodedMessage.length; i++)
+									{
+										message += String.fromCharCode(decodedMessage[i]);
+									}
+									message += "\n";
+								}
+								else
+								{
+									let plainMessage = json["plainMessage"];
+									message = "["+user+"] (unencoded) "+plainMessage+"\n";
+								}
+								document.getElementById("output").value += message;
+							});
+						</script>
+                    </div>
+                </div>
+            </div>
+            {% endblock bodycontent %}
+            {% block footer %}
+            <footer class='footer'>
+                <div class='container'>
+                    <span class='text-muted'><a href='/impressum'>Impressum</a></span>
+                </div>
+            </footer>
+            {% endblock footer %}
+        {% endblock body %}
+    </body>
+</html>
