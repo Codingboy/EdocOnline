@@ -2,7 +2,7 @@
 
 import logging
 from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room
 
 HOST = "coding42.diphda.uberspace.de"
 PORT = 62155
@@ -34,10 +34,19 @@ def root():
 def impressum():
     return render_template("impressum.html")
 
-@socketio.on("requestBrands")
+@socketio.on("sendMessage")
 def sendMessage(json):
     logger.info(json)
-    emit("receiveMessage", json, room=None)
+    emit("receiveMessage", json, room=1)
+
+@socketio.on("connect")
+def handleJoin():
+    logger.info("connect")
+    join_room(1)
+
+@socketio.on_error_default
+def error_handler(e):
+    logger.info(e)
     
 if __name__ == "__main__":
     socketio.run(app, host=HOST, port=PORT, debug=False)

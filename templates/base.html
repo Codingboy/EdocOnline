@@ -10,6 +10,7 @@
 		<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
         <title>{% block title %}Edoc{% endblock title %}</title>
+	<link rel="shortcut icon" href="/static/favicon.ico">
         <style>
             html
             {
@@ -18,10 +19,14 @@
             }
             body
             {
-                padding-top: 5%;
+                padding-top: 2.5%;
                 padding-bottom: 5%;
                 margin-bottom: 60px
             }
+		#input
+		{
+			width: 75%;
+		}
             .footer
             {
                 position: absolute;
@@ -144,38 +149,39 @@
 					{
 						for (let i=0; i<256; i++)
 						{
-							let encoded = plain[i] ^ this.seed[i];
-							for (let j=0; j<8; j++)
-							{ 
-								if (this.seed[i] & 1<<j != 0)
-								{
-									let ring = this.rings[j];
-									encoded = ring.encode(encoded);
+							if (processedBytes < length)
+							{
+								let encoded = plain[i] ^ this.seed[i];
+								for (let j=0; j<8; j++)
+								{ 
+									if ((this.seed[i] & (1<<j)) != 0)
+									{
+										let ring = this.rings[j];
+										encoded = ring.encode(encoded);
+									}
 								}
+								data.push(encoded);
 							}
-							data.push(encoded);
 							processedBytes++;
 						}
-						for (let i=0; i<128; i++)
+						for (let i=0; i<256; i++)
 						{
-							this.seed[i] = plain[processedBytes-256+i] ^ plain[processedBytes-256+i+128];
-							this.seed[i+128] = plain[processedBytes-256+i+128-64] ^ plain[processedBytes-256+i+128-64];
+							this.seed[i] = plain[processedBytes-256+i] ^ this.seed[(i+1)%256];
 						}
 					}
-					let ret = {"length":length,"data":data};
-					return ret;
+					return data;
 				}
 				decode(encoded)
 				{
-					let data = encoded["data"];
-					let length = encoded["length"];
+					let length = encoded.length;
 					let ret = [];
+					let seeded = false;
 					for (let i=0; i<length; i++)
 					{
-						let decoded = data[i];
+						let decoded = encoded[i];
 						for (let j=8-1; j>=0; j--)
 						{ 
-							if (this.seed[i%256] & 1<<j != 0)
+							if ((this.seed[i%256] & (1<<j)) != 0)
 							{
 								let ring = this.rings[j];
 								decoded = ring.decode(decoded);
@@ -185,11 +191,19 @@
 						ret.push(decoded);
 						if (i%256 == 256-1)
 						{
-							for (let j=0; j<128; j++)
+							seeded = true;
+							for (let j=0; j<256; j++)
 							{
-								this.seed[j] = ret[i-256+j+1] ^ ret[i-256+j+128+1];
-								this.seed[j+128] = ret[i-256+j+128+1-64] ^ ret[i-256+j+128+1-64];
+								this.seed[j] = ret[j-256+i+1] ^ this.seed[(j+1)%256];
 							}
+						}
+					}
+					if (!seeded)
+					{
+						
+						for (let i=0; i<256; i++)
+						{
+							this.seed[i] = getRandomInt(0, 256-1);
 						}
 					}
 					return ret;
@@ -205,7 +219,12 @@
 				}
 				getSeed()
 				{
-					return this.seed.slice();
+					let seed = [];
+					for (let i=0; i<256; i++)
+					{
+						seed[i] = this.seed[i];
+					}
+					return seed;
 				}
 				setOffsets(offsets)
 				{
@@ -216,12 +235,19 @@
 				}
 				setSeed(seed)
 				{
-					this.seed = seed.splice();
+					for (let i=0; i<256; i++)
+					{
+						this.seed[i] = seed[i];
+					}
 				}
 			}
 			function send()
 			{
 				let input = document.getElementById("input");
+				if (input.value == "")
+				{
+					return;
+				}
 				let json = {};
 				json["username"] = username;
 				if (torus === null)
@@ -231,6 +257,7 @@
 				}
 				else
 				{
+					let message = input.value;
 					json["encoded"] = true;
 					json["offsets"] = torus.getOffsets();
 					json["seed"] = torus.getSeed();
@@ -243,12 +270,20 @@
 					json["encodedMessage"] = encodedMessage;
 				}
 				input.value = "";
+				console.log(json);
 				socket.emit("sendMessage", json);
 			}
 			function usePassword()
 			{
 				let password = document.getElementById("password").value;
-				updatePassword(password);
+				if (password == "")
+				{
+					torus = null;
+				}
+				else
+				{
+					updatePassword(password);
+				}
 			}
 			function usePasswordFile()
 			{
@@ -275,7 +310,24 @@
 			}
 			function useUsername()
 			{
-				username = document.getElementById("username").value;
+				let request = db.transaction(["settings"], "readwrite").objectStore("settings").delete(0);
+				request.onerror = function(event)
+				{
+					alert("DatabaseError");
+				};
+				request.onsuccess = function(event)
+				{
+					username = document.getElementById("username").value;
+					let settings = {"id":0, "username":username};
+					let req = db.transaction(["settings"], "readwrite").objectStore("settings").put(settings);
+					req.onerror = function(event)
+					{
+						alert("DatabaseError");
+					};
+					req.onsuccess = function(event)
+					{
+					};
+				};
 			}
 			function readSingleFile(e)
 			{
@@ -288,14 +340,51 @@
 				reader.onload = function(e)
 				{
 					passwordFileContent = e.target.result;
+					let begin = parseInt(document.getElementById("begin").value);
+					let length = parseInt(document.getElementById("length").value);
+					let contentLength = passwordFileContent.length;
+					if (length > contentLength)
+					{
+						alert("passwordfile is very small!");
+					}
+					else
+					{
+						let maxValue = contentLength-length;
+						document.getElementById("begin").value = getRandomInt(0, maxValue);
+					}
 				};
 				reader.readAsText(file);
+			}
+			function initDB(callback)
+			{
+				window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+				window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
+				window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+				let request = window.indexedDB.open("edoc", 1);
+				request.onupgradeneeded = function(event)
+				{
+					db = event.target.result;
+					if (!db.objectStoreNames.contains("settings"))
+					{
+						db.createObjectStore("settings", {keyPath: "id"});
+					}
+				};
+				request.onsuccess = function(event)
+				{
+					db = event.target.result;
+					callback(event);
+				};
+				request.onerror = function(event)
+				{
+					alert("DBError");
+				};
 			}
 		</script>
     </head>
     <body>
         {% block body %}
             {% block bodycontent %}
+		<center>
             <div class='container'>
                 <div class='row'>
                     <div class='col-xs-12'>
@@ -303,11 +392,11 @@
 							Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
 							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
 							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="256" min="1" max ="256"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
-							<textarea disabled rows="30" cols="100" id="output"></textarea><br/>
+							<textarea disabled rows="30" cols="126" id="output"></textarea><br/>
 							<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
 						</form>
 						<script>
-							let username = "Unknown User";//TODO load/store local db
+							let username = "Unknown User";
 							document.getElementById("username").value = username;
 							let torus = null;
 							let passwordFileContent = "";
@@ -316,23 +405,27 @@
 							socket.open();
 							socket.on("receiveMessage", function(json)
 							{
+								console.log(json);
 								let user = json["username"];
 								let encoded = json["encoded"];
 								let message = "";
 								if (encoded)
 								{
-									let offsets = json["offsets"];
-									let seed = json["seed"];
-									torus.setSeed(seed);
-									torus.setOffsets(offsets);
-									let encodedMessage = json["encodedMessage"];
-									let decodedMessage = torus.decode(encodedMessage);
-									message = "["+user+"] ";
-									for (let i=0; i<decodedMessage.length; i++)
+									if (torus)
 									{
-										message += String.fromCharCode(decodedMessage[i]);
+										let offsets = json["offsets"];
+										let seed = json["seed"];
+										torus.setSeed(seed);
+										torus.setOffsets(offsets);
+										let encodedMessage = json["encodedMessage"];
+										let decodedMessage = torus.decode(encodedMessage);
+										message = "["+user+"] ";
+										for (let i=0; i<decodedMessage.length; i++)
+										{
+											message += String.fromCharCode(decodedMessage[i]);
+										}
+										message += "\n";
 									}
-									message += "\n";
 								}
 								else
 								{
@@ -341,16 +434,42 @@
 								}
 								document.getElementById("output").value += message;
 							});
+							let db = null;
+							initDB(function(event)
+							{
+								let req = db.transaction(["settings"]).objectStore("settings").get(0);
+								req.onerror = function(event)
+								{
+									alert("DatabaseError");
+								};
+								req.onsuccess = function(event)
+								{
+									if (req.result)
+									{
+										username = req.result["username"];
+										document.getElementById("username").value = username;
+									}
+								};
+							});
+							document.getElementById("input").addEventListener ("keydown", function(event) {
+								if (event.keyCode == 13)
+								{
+									send();
+								}
+							});
 						</script>
                     </div>
-                </div>
+		</div>
             </div>
+		</center>
             {% endblock bodycontent %}
             {% block footer %}
             <footer class='footer'>
+		<center>
                 <div class='container'>
                     <span class='text-muted'><a href='/impressum'>Impressum</a></span>
                 </div>
+		</center>
             </footer>
             {% endblock footer %}
         {% endblock body %}
