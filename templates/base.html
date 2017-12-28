@@ -136,6 +136,43 @@
 						this.pw.push(this.pw.shift());
 					}
 				}
+				encode256(plain)
+				{
+					let encoded = new Array(256);
+					for (let i=0; i<256; i++)
+					{
+						encoded[i] = plain[i] ^ this.seed[i];
+						for (let j=0; j<8; j++)
+						{ 
+							if ((this.seed[i] & (1<<j)) != 0)
+							{
+								let ring = this.rings[j];
+								encoded[i] = ring.encode(encoded[i]);
+							}
+						}
+					}
+					for (let j=0; j<8; j++)
+					{
+						let ring = this.rings[j];
+						let mixed = new Array(256);
+						for (let i=0; i<256; i++)
+						{
+							mixed[i] = encoded[i];
+						}
+						for (let i=0; i<256; i++)
+						{
+							encoded[ring.encodeRing[i]] = mixed[i];
+						}
+					}
+					for (let i=0; i<256; i++)
+					{
+						this.seed[i] = encoded[i] ^ this.seed[(i+1)%256];
+						if (this.seed[i] == 0)
+						{
+							this.seed[i] = 1;
+						}
+					}
+				}
 				encode(plain)
 				{
 					let length = plain.length;
@@ -143,105 +180,90 @@
 					{
 						plain.push(getRandomInt(0, 255));
 					}
-					let data = [];
-					let processedBytes = 0;
-					while (processedBytes < plain.length)
+					let encodedBytes = 0;
+					let encoded = [];
+					while (encodedBytes < plain.length)
 					{
+						let plainPart = [];
 						for (let i=0; i<256; i++)
 						{
-							//if (processedBytes < length)
-							//{
-								let encoded = plain[i] ^ this.seed[i];
-								for (let j=0; j<8; j++)
-								{ 
-									if ((this.seed[i] & (1<<j)) != 0)
-									{
-										let ring = this.rings[j];
-										encoded = ring.encode(encoded);
-									}
-								}
-								data.push(encoded);
-							//}
-							processedBytes++;
+							plainPart.push(plain[encodedBytes]);
+							encodedBytes++;
 						}
-						for (let j=0; j<8; j++)
-						{
-							let ring = this.rings[j];
-							let mixed = new Array(256);
-							for (let i=0; i<256; i++)
-							{
-								mixed[i] = data[processedBytes-256+i];
-							}
-							for (let i=0; i<256; i++)
-							{
-								data[ring.encodeRing[i]+processedBytes-256] = mixed[i];
-							}
-						}
+						let encodedPart = encode256(part);
 						for (let i=0; i<256; i++)
 						{
-							this.seed[i] = data[processedBytes-256+i] ^ this.seed[(i+1)%256];
-							if (this.seed[i] == 0)
-							{
-								this.seed[i] = 1;
-							}
+							encoded.push(encodedPart[i]);
 						}
 					}
-					return data;
+					return {"length":length, "message":encoded};
 				}
-				decode(encoded)
+				decode256(encoded)
 				{
-					let length = encoded.length;
-					let ret = [];
-					let seeded = false;
-					let processedBytes = 0;
-					for (let i=0; i<length; i++)
+					let decoded = [];
+					for (let i=0; i<256; i++)
 					{
-						let decoded = encoded[i];
+						decoded.push(encoded[i]);
 						for (let j=8-1; j>=0; j--)
 						{ 
 							if ((this.seed[i%256] & (1<<j)) != 0)
 							{
 								let ring = this.rings[j];
-								decoded = ring.decode(decoded);
+								decoded[i] = ring.decode(decoded[i]);
 							}
 						}
-						decoded = decoded ^ this.seed[i%256];
-						ret.push(decoded);
-						processedBytes++;
-						if (i%256 == 256-1)
-						{
-							for (let j=8-1; j>=0; j--)
-							{
-								let ring = this.rings[j];
-								let mixed = new Array(256);
-								for (let i=0; i<256; i++)
-								{
-									mixed[i] = ret[processedBytes-256+i];
-								}
-								for (let i=0; i<256; i++)
-								{
-									ret[i+processedBytes-256] = mixed[ring.encodeRing[i]];
-								}
-							}
-							seeded = true;
-							for (let j=0; j<256; j++)
-							{
-								this.seed[j] = encoded[j-256+i+1] ^ this.seed[(j+1)%256];
-								if (this.seed[j] == 0)
-								{
-									this.seed[j] = 1;
-								}
-							}
-						}
+						decoded[i] = encoded[i] ^ this.seed[i%256];
 					}
-					if (!seeded)
+					for (let j=8-1; j>=0; j--)
 					{
+						let ring = this.rings[j];
+						let mixed = new Array(256);
 						for (let i=0; i<256; i++)
 						{
-							this.seed[i] = getRandomInt(1, 256-1);
+							mixed[i] = ret[i];
+						}
+						for (let i=0; i<256; i++)
+						{
+							ret[i] = mixed[ring.encodeRing[i]];
 						}
 					}
-					return ret;
+					for (let i=0; i<256; i++)
+					{
+						this.seed[i] = encoded[i] ^ this.seed[(i+1)%256];
+						if (this.seed[i] == 0)
+						{
+							this.seed[i] = 1;
+						}
+					}
+				}
+				decode(encoded)
+				{
+					let length = encoded["length"];
+					let encoded = encoded["message"];
+					let decodedBytes = 0;
+					let decoded = [];
+					while (decodedBytes < encoded.length)
+					{
+						let encodedPart = [];
+						for (let i=0; i<256; i++)
+						{
+							encodedPart.push(encoded[decodedBytes]);
+							decodedBytes++;
+						}
+						let decodedPart = decode256(encodedPart);
+						for (let i=0; i<256; i++)
+						{
+							if (decoded.length < length)
+							{
+								decoded.push(decodedPart[i]);
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					return decoded;
 				}
 				getOffsets()
 				{
