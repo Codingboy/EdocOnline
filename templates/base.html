@@ -115,8 +115,7 @@
 						offsets = [];
 						for (let i=0; i<8; i++)
 						{ 
-							//offsets.push(getRandomInt(0, 255));
-							offsets.push(getRandomInt(0, 0));
+							offsets.push(getRandomInt(0, 255));
 						}
 					}
 					if (typeof seed == "undefined")
@@ -124,8 +123,7 @@
 						seed = [];
 						for (let i=0; i<256; i++)
 						{ 
-							//seed.push(getRandomInt(1, 255));
-							seed.push(getRandomInt(0, 0));
+							seed.push(getRandomInt(1, 255));
 						}
 					}
 					this.rings = [];
@@ -195,7 +193,7 @@
 					let length = encoded.length;
 					let ret = [];
 					let seeded = false;
-					processedBytes = 0;
+					let processedBytes = 0;
 					for (let i=0; i<length; i++)
 					{
 						let decoded = encoded[i];
@@ -222,7 +220,7 @@
 								}
 								for (let i=0; i<256; i++)
 								{
-									data[i+processedBytes-256] = mixed[ring.encodeRing[i]];
+									ret[i+processedBytes-256] = mixed[ring.encodeRing[i]];
 								}
 							}
 							seeded = true;
