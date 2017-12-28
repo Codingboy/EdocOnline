@@ -48,7 +48,7 @@ def joinRoom(room):
 	connection.close()
 	join_room(room)
 	session["room"] = room
-    
+
 def leaveRoom(room):
 	connection = sqlite3.connect(DBNAME, check_same_thread = False)
 	cursor = connection.cursor()
@@ -57,11 +57,11 @@ def leaveRoom(room):
 	connection.close()
 	leave_room(room)
 	session["room"] = -1
-    
+
 @app.route("/", methods=["GET", "POST"])
 def root():
 	return render_template("base.html")
-    
+
 @app.route("/impressum", methods=["GET", "POST"])
 def impressum():
 	return render_template("impressum.html")
@@ -95,7 +95,7 @@ def handleDisconnect():
 @socketio.on_error_default
 def error_handler(e):
 	logger.info(e)
-    
+
 if __name__ == "__main__":
 	initDB()
 	socketio.run(app, host=HOST, port=PORT, debug=False)

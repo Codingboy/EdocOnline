@@ -115,7 +115,8 @@
 						offsets = [];
 						for (let i=0; i<8; i++)
 						{ 
-							offsets.push(getRandomInt(0, 255));
+							//offsets.push(getRandomInt(0, 255));
+							offsets.push(getRandomInt(0, 0));
 						}
 					}
 					if (typeof seed == "undefined")
@@ -123,7 +124,8 @@
 						seed = [];
 						for (let i=0; i<256; i++)
 						{ 
-							seed.push(getRandomInt(1, 255));
+							//seed.push(getRandomInt(1, 255));
+							seed.push(getRandomInt(0, 0));
 						}
 					}
 					this.rings = [];
@@ -149,8 +151,8 @@
 					{
 						for (let i=0; i<256; i++)
 						{
-							if (processedBytes < length)
-							{
+							//if (processedBytes < length)
+							//{
 								let encoded = plain[i] ^ this.seed[i];
 								for (let j=0; j<8; j++)
 								{ 
@@ -161,21 +163,25 @@
 									}
 								}
 								data.push(encoded);
-							}
+							//}
 							processedBytes++;
 						}
-						for (let j=1; j<16; j++)//TODO mixcolumns
+						for (let j=0; j<8; j++)
 						{
-							let tmp = data[j*16];
-							for (let i=0; i<16; i++)
+							let ring = this.rings[j];
+							let mixed = new Array(256);
+							for (let i=0; i<256; i++)
 							{
-								data[i+j*16] = data[((i+j)%16)+j*16]
+								mixed[i] = data[processedBytes-256+i];
 							}
-							data[(j+1)*16-j] = tmp;
+							for (let i=0; i<256; i++)
+							{
+								data[ring.encodeRing[i]+processedBytes-256] = mixed[i];
+							}
 						}
 						for (let i=0; i<256; i++)
 						{
-							this.seed[i] = plain[processedBytes-256+i] ^ this.seed[(i+1)%256];
+							this.seed[i] = data[processedBytes-256+i] ^ this.seed[(i+1)%256];
 							if (this.seed[i] == 0)
 							{
 								this.seed[i] = 1;
@@ -189,6 +195,7 @@
 					let length = encoded.length;
 					let ret = [];
 					let seeded = false;
+					processedBytes = 0;
 					for (let i=0; i<length; i++)
 					{
 						let decoded = encoded[i];
@@ -202,12 +209,26 @@
 						}
 						decoded = decoded ^ this.seed[i%256];
 						ret.push(decoded);
+						processedBytes++;
 						if (i%256 == 256-1)
 						{
+							for (let j=8-1; j>=0; j--)
+							{
+								let ring = this.rings[j];
+								let mixed = new Array(256);
+								for (let i=0; i<256; i++)
+								{
+									mixed[i] = ret[processedBytes-256+i];
+								}
+								for (let i=0; i<256; i++)
+								{
+									data[i+processedBytes-256] = mixed[ring.encodeRing[i]];
+								}
+							}
 							seeded = true;
 							for (let j=0; j<256; j++)
 							{
-								this.seed[j] = ret[j-256+i+1] ^ this.seed[(j+1)%256];
+								this.seed[j] = encoded[j-256+i+1] ^ this.seed[(j+1)%256];
 								if (this.seed[j] == 0)
 								{
 									this.seed[j] = 1;
