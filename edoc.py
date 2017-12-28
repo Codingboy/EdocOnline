@@ -1,13 +1,16 @@
 #!/usr/bin/env python3.4
 
 import logging
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit, join_room
+from flask import Flask, render_template, session
+from flask_socketio import SocketIO, emit, join_room, leave_room
+import sqlite3
 
 HOST = "coding42.diphda.uberspace.de"
 PORT = 62155
 
 PROJECTNAME = "edoc"
+DBNAME = "_"+PROJECTNAME+".sqlite"
+LOGNAME = "_"+PROJECTNAME+".log"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "BlaBlub42"
@@ -16,7 +19,7 @@ app.config.update(PROPAGATE_EXCEPTIONS=True)
 
 logger = logging.getLogger(PROJECTNAME)
 logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler(PROJECTNAME+".log")
+fh = logging.FileHandler(LOGNAME)
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -25,28 +28,74 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
+
+def initDB():
+	connection = sqlite3.connect(DBNAME, check_same_thread = False)
+	cursor = connection.cursor()
+	cursor.execute("CREATE TABLE IF NOT EXISTS rooms(id INTEGER, name TEXT, users INTEGER, PRIMARY KEY(id))")
+	try:
+		cursor.execute("INSERT INTO rooms (id, name, users) VALUES (0, '', 0)")
+	except sqlite3.IntegrityError:
+		pass
+	connection.commit()
+	connection.close()
+
+def joinRoom(room):
+	connection = sqlite3.connect(DBNAME, check_same_thread = False)
+	cursor = connection.cursor()
+	cursor.execute("UPDATE rooms SET users=users+1 WHERE id=?", (room,))
+	connection.commit()
+	connection.close()
+	join_room(room)
+	session["room"] = room
+    
+def leaveRoom(room):
+	connection = sqlite3.connect(DBNAME, check_same_thread = False)
+	cursor = connection.cursor()
+	cursor.execute("UPDATE rooms SET users=users-1 WHERE id=?", (room,))#TODO delete room if emty
+	connection.commit()
+	connection.close()
+	leave_room(room)
+	session["room"] = -1
     
 @app.route("/", methods=["GET", "POST"])
 def root():
-    return render_template("base.html")
+	return render_template("base.html")
     
 @app.route("/impressum", methods=["GET", "POST"])
 def impressum():
-    return render_template("impressum.html")
+	return render_template("impressum.html")
 
 @socketio.on("sendMessage")
 def sendMessage(json):
-    logger.info(json)
-    emit("receiveMessage", json, room=1)
+	logger.info(json)
+	room = session["room"]
+	emit("receiveMessage", json, room=room)
+
+@socketio.on("createRoom")
+def createRoom(json):
+	logger.info(json)
+	connection = sqlite3.connect(DBNAME, check_same_thread = False)
+	cursor = connection.cursor()
+	cursor.execute("INSERT INTO rooms (name, users) VALUES ('', 0)")
+	room = cursor.lastrowid
+	connection.commit()
+	connection.close()
+	emit("createRooms", {"rooms":[room]}, room=0)
 
 @socketio.on("connect")
-def handleJoin():
-    logger.info("connect")
-    join_room(1)
+def handleConnect():
+	joinRoom(0)
+
+@socketio.on("disconnect")
+def handleDisconnect():
+	room = session["room"]
+	leaveRoom(room)
 
 @socketio.on_error_default
 def error_handler(e):
-    logger.info(e)
+	logger.info(e)
     
 if __name__ == "__main__":
-    socketio.run(app, host=HOST, port=PORT, debug=False)
+	initDB()
+	socketio.run(app, host=HOST, port=PORT, debug=False)
