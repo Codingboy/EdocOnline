@@ -49,20 +49,19 @@
 			{
 				constructor(pw, offset)
 				{
-					this.encodeRing = [];
-					this.decodeRing = [];
+					this.encodeRing = new Array(256);
+					this.decodeRing = new Array(256);
 					this.offset = offset;
 					this.pw = pw.slice();
 					for (let i=0; i<256; i++)
 					{
-						this.encodeRing.push(-1);
-						this.decodeRing.push(-1);
+						this.encodeRing[i] = -1;
 					}
 					let index = 0;
 					while (this.pw.length < 256)
 					{
-						this.pw.push(this.pw[index]);
-						index = (index+1)%256;
+						this.pw.push(pw[index]);
+						index = (index+1)%pw.length;
 					}
 					index = 0;
 					for (let i=0; i<256; i++)
@@ -112,27 +111,27 @@
 				{
 					if (typeof offsets == "undefined")
 					{
-						offsets = [];
+						offsets = new Array(8);
 						for (let i=0; i<8; i++)
 						{ 
-							offsets.push(getRandomInt(0, 255));
+							offsets[i] = getRandomInt(0, 255);
 						}
 					}
 					if (typeof seed == "undefined")
 					{
-						seed = [];
+						seed = new Array(256);
 						for (let i=0; i<256; i++)
 						{ 
-							seed.push(getRandomInt(1, 255));
+							seed[i] = getRandomInt(1, 255);
 						}
 					}
-					this.rings = [];
+					this.rings = new Array(8);
 					this.seed = seed.slice();
 					this.pw = pw.slice();
 					for (let i=0; i<8; i++)
 					{
 						let ring = new Ring(this.pw, offsets[i]);
-						this.rings.push(ring);
+						this.rings[i] = ring;
 						this.pw.push(this.pw.shift());
 					}
 				}
@@ -141,7 +140,7 @@
 					let encoded = new Array(256);
 					for (let i=0; i<256; i++)
 					{
-						encoded[i] = plain[i] ^ this.seed[i];
+						encoded[i] = plain[i];
 						for (let j=0; j<8; j++)
 						{ 
 							if ((this.seed[i] & (1<<j)) != 0)
@@ -150,6 +149,7 @@
 								encoded[i] = ring.encode(encoded[i]);
 							}
 						}
+						encoded[i] = encoded[i] ^ this.seed[i];
 					}
 					for (let j=0; j<8; j++)
 					{
@@ -172,6 +172,7 @@
 							this.seed[i] = 1;
 						}
 					}
+					return encoded;
 				}
 				encode(plain)
 				{
@@ -190,7 +191,7 @@
 							plainPart.push(plain[encodedBytes]);
 							encodedBytes++;
 						}
-						let encodedPart = encode256(part);
+						let encodedPart = this.encode256(plainPart);
 						for (let i=0; i<256; i++)
 						{
 							encoded.push(encodedPart[i]);
@@ -200,19 +201,10 @@
 				}
 				decode256(encoded)
 				{
-					let decoded = [];
+					let decoded = new Array(256);
 					for (let i=0; i<256; i++)
 					{
-						decoded.push(encoded[i]);
-						for (let j=8-1; j>=0; j--)
-						{ 
-							if ((this.seed[i%256] & (1<<j)) != 0)
-							{
-								let ring = this.rings[j];
-								decoded[i] = ring.decode(decoded[i]);
-							}
-						}
-						decoded[i] = encoded[i] ^ this.seed[i%256];
+						decoded[i] = encoded[i];
 					}
 					for (let j=8-1; j>=0; j--)
 					{
@@ -220,11 +212,23 @@
 						let mixed = new Array(256);
 						for (let i=0; i<256; i++)
 						{
-							mixed[i] = ret[i];
+							mixed[i] = decoded[i];
 						}
-						for (let i=0; i<256; i++)
+						for (let i=256-1; i>=0; i--)
 						{
-							ret[i] = mixed[ring.encodeRing[i]];
+							decoded[i] = mixed[ring.encodeRing[i]];
+						}
+					}
+					for (let i=0; i<256; i++)
+					{
+						decoded[i] = decoded[i] ^ this.seed[i];
+						for (let j=8-1; j>=0; j--)
+						{ 
+							if ((this.seed[i] & (1<<j)) != 0)
+							{
+								let ring = this.rings[j];
+								decoded[i] = ring.decode(decoded[i]);
+							}
 						}
 					}
 					for (let i=0; i<256; i++)
@@ -235,11 +239,12 @@
 							this.seed[i] = 1;
 						}
 					}
+					return decoded;
 				}
-				decode(encoded)
+				decode(encodedJSON)
 				{
-					let length = encoded["length"];
-					let encoded = encoded["message"];
+					let length = encodedJSON["length"];
+					let encoded = encodedJSON["message"];
 					let decodedBytes = 0;
 					let decoded = [];
 					while (decodedBytes < encoded.length)
@@ -250,7 +255,7 @@
 							encodedPart.push(encoded[decodedBytes]);
 							decodedBytes++;
 						}
-						let decodedPart = decode256(encodedPart);
+						let decodedPart = this.decode256(encodedPart);
 						for (let i=0; i<256; i++)
 						{
 							if (decoded.length < length)
@@ -437,6 +442,18 @@
 					alert("DBError");
 				};
 			}
+function msToTime(duration) {
+    var milliseconds = parseInt((duration%1000)/100)
+        , seconds = parseInt((duration/1000)%60)
+        , minutes = parseInt((duration/(1000*60))%60)
+        , hours = parseInt((duration/(1000*60*60))%24);
+
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
+}
 		</script>
     </head>
     <body>
@@ -467,6 +484,7 @@
 								let user = json["username"];
 								let encoded = json["encoded"];
 								let message = "";
+								let millis = json["time"];
 								if (encoded)
 								{
 									if (torus)
@@ -477,7 +495,7 @@
 										torus.setOffsets(offsets);
 										let encodedMessage = json["encodedMessage"];
 										let decodedMessage = torus.decode(encodedMessage);
-										message = "["+user+"] ";
+										message = "<"+msToTime(millis)+">["+user+"] ";
 										for (let i=0; i<decodedMessage.length; i++)
 										{
 											message += String.fromCharCode(decodedMessage[i]);
@@ -488,7 +506,7 @@
 								else
 								{
 									let plainMessage = json["plainMessage"];
-									message = "["+user+"] (unencoded) "+plainMessage+"\n";
+									message = "<"+msToTime(millis)+">["+user+"] (unencoded) "+plainMessage+"\n";
 								}
 								document.getElementById("output").value += message;
 							});
@@ -515,6 +533,103 @@
 									send();
 								}
 							});
+function testRing()
+{
+	let pw = [];
+	let message = [];
+	for (let i=0; i<256; i++)
+	{ 
+		pw.push(getRandomInt(0, 255));
+		message.push(getRandomInt(0, 255));
+	}
+	let offset = getRandomInt(0, 255);
+	let ring = new Ring(pw, offset);
+	let encodedMessage = []
+	for (let i=0; i<256; i++)
+	{
+		encodedMessage.push(ring.encode(message[i]));
+	}
+	ring = new Ring(pw, offset);
+	let decodedMessage = []
+	for (let i=0; i<256; i++)
+	{
+		decodedMessage.push(ring.decode(encodedMessage[i]));
+	}
+	let ok = 0;
+	for (let i=0; i<256; i++)
+	{
+		if (decodedMessage[i] == message[i])
+		{
+			ok++;
+		}
+	}
+	console.log(ok);
+}
+function testTorus256()
+{
+	let pw = [];
+	let message = [];
+	let offsets = [];
+	let seed = [];
+	let length = 256;
+	for (let i=0; i<256; i++)
+	{ 
+		pw.push(getRandomInt(0, 255));
+		offsets.push(getRandomInt(0, 255));
+		seed.push(getRandomInt(1, 255));
+	}
+	for (let i=0; i<length; i++)
+	{ 
+		message.push(getRandomInt(0, 255));
+	}
+	let torus = new Torus(pw, offsets, seed);
+	let encodedMessage = torus.encode256(message);
+	torus = new Torus(pw, offsets, seed);
+	let decodedMessage = torus.decode256(encodedMessage);
+	let ok = 0;
+	for (let i=0; i<length; i++)
+	{
+		if (decodedMessage[i] == message[i])
+		{
+			ok++;
+		}
+	}
+	console.log(ok);
+}
+function testTorus(length)
+{
+	let pw = [];
+	let message = [];
+	let offsets = [];
+	let seed = [];
+	for (let i=0; i<256; i++)
+	{ 
+		pw.push(getRandomInt(0, 255));
+		offsets.push(getRandomInt(0, 255));
+		seed.push(getRandomInt(1, 255));
+	}
+	for (let i=0; i<length; i++)
+	{ 
+		message.push(getRandomInt(0, 255));
+	}
+	let torus = new Torus(pw, offsets, seed);
+	let encodedMessage = torus.encode(message);
+	torus = new Torus(pw, offsets, seed);
+	let decodedMessage = torus.decode(encodedMessage);
+	let ok = 0;
+	for (let i=0; i<length; i++)
+	{
+		if (decodedMessage[i] == message[i])
+		{
+			ok++;
+		}
+	}
+	console.log(ok);
+}
+testRing();
+testTorus256();
+testTorus(256);
+testTorus(512);
 						</script>
                     </div>
 		</div>

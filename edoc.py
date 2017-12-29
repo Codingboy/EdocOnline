@@ -4,6 +4,7 @@ import logging
 from flask import Flask, render_template, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import sqlite3
+import time
 
 HOST = "coding42.diphda.uberspace.de"
 PORT = 62155
@@ -70,6 +71,8 @@ def impressum():
 def sendMessage(json):
 	logger.info(json)
 	room = session["room"]
+	millis = int(round(time.time() * 1000))
+	json["time"] = millis
 	emit("receiveMessage", json, room=room)
 
 @socketio.on("createRoom")
