@@ -164,34 +164,6 @@
 							encoded[ring.encodeRing[i]] = mixed[i];
 						}
 					}
-					let rows = new Array(16);
-					let columns = new Array(16);
-					for (let y=0; y<16; y++)
-					{
-						let row = 0;
-						for (let x=0; x<16; x++)
-						{
-							row = row^encoded[y*16+x];
-						}
-						rows[y] = row;
-					}
-					for (let x=0; x<16; x++)
-					{
-						let column = 0;
-						for (let y=0; y<16; y++)
-						{
-							column = column^encoded[y*16+x];
-						}
-						columns[y] = column;
-					}
-					for (let y=0; y<16; y++)
-					{
-						for (let x=0; x<16; x++)
-						{
-							encoded[y*16+x] = row[y]^column[x];
-						}
-						rows[y] = row;
-					}
 					for (let i=0; i<256; i++)
 					{
 						this.seed[i] = encoded[i] ^ this.seed[(i+1)%256];
@@ -233,34 +205,6 @@
 					for (let i=0; i<256; i++)
 					{
 						decoded[i] = encoded[i];
-					}
-					let rows = new Array(16);
-					let columns = new Array(16);
-					for (let y=0; y<16; y++)
-					{
-						let row = 0;
-						for (let x=0; x<16; x++)
-						{
-							row = row^encoded[y*16+x];
-						}
-						rows[y] = row;
-					}
-					for (let x=0; x<16; x++)
-					{
-						let column = 0;
-						for (let y=0; y<16; y++)
-						{
-							column = column^encoded[y*16+x];
-						}
-						columns[y] = column;
-					}
-					for (let y=0; y<16; y++)
-					{
-						for (let x=0; x<16; x++)
-						{
-							encoded[y*16+x] = row[y]^column[x];
-						}
-						rows[y] = row;
 					}
 					for (let j=8-1; j>=0; j--)
 					{
