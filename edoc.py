@@ -10,8 +10,8 @@ HOST = "coding42.diphda.uberspace.de"
 PORT = 62155
 
 PROJECTNAME = "edoc"
-DBNAME = "_"+PROJECTNAME+".sqlite"
-LOGNAME = "_"+PROJECTNAME+".log"
+DBNAME = PROJECTNAME+".sqlite"
+LOGNAME = PROJECTNAME+".log"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "BlaBlub42"

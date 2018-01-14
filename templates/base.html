@@ -1,364 +1,424 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
-    <head>
-        {% block head %}
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+	<head>
+		{% block head %}
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 		<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
 		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
-        <title>{% block title %}Edoc{% endblock title %}</title>
-	<link rel="shortcut icon" href="/static/favicon.ico">
-        <style>
-            html
-            {
-                position: relative;
-                min-height: 100%;
-            }
-            body
-            {
-                padding-top: 1%;
-                padding-bottom: 5%;
-                margin-bottom: 60px
-            }
-		#input
-		{
-			width: 75%;
-		}
-            .footer
-            {
-                position: absolute;
-                bottom: 0;
-                width: 100%;
-                background-color: #f5f5f5;
-            }
-        </style>
-        {% endblock head %}
+		<link rel="shortcut icon" href="/static/favicon.ico">
+		<link href="https://fonts.googleapis.com/css?family=Indie+Flower" rel="stylesheet">
+		<title>{% block title %}Edoc{% endblock title %}</title>
+		<style>
+			html
+			{
+				position: relative;
+				min-height: 100%;
+			}
+			body
+			{
+				padding-top: 1%;
+				padding-bottom: 5%;
+				margin-bottom: 60px
+			}
+			#input
+			{
+				width: 75%;
+			}
+			.footer
+			{
+				position: absolute;
+				bottom: 0;
+				width: 100%;
+				background-color: #f5f5f5;
+			}
+		</style>
+		{% endblock head %}
 		<script>
-			/**
-			 * Returns a random integer between min (inclusive) and max (inclusive)
-			 * Using Math.round() will give you a non-uniform distribution!
-			 */
-			function getRandomInt(min, max)
+function getRandomInt(min, max)
+{
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+class SBox
+{
+	constructor(pw, seed)
+	{
+		this.encodeMap = new Array(256);
+		this.decodeMap = new Array(256);
+		this.seed = seed;
+		for (let i=0; i<256; i++)
+		{
+			this.encodeMap[i] = -1;
+		}
+		let index = 0;
+		for (let i=0; i<256; i++)
+		{
+			let emptyCounter = 0;
+			let maxEmpty = 256-i;
+			let targetEmpty = 1+(pw[i] % maxEmpty);
+			while (emptyCounter < targetEmpty)
 			{
-				return Math.floor(Math.random() * (max - min + 1)) + min;
-			}
-			class Ring
-			{
-				constructor(pw, offset)
+				if (this.encodeMap[index] == -1)
 				{
-					this.encodeRing = new Array(256);
-					this.decodeRing = new Array(256);
-					this.offset = offset;
-					this.pw = pw.slice();
-					for (let i=0; i<256; i++)
-					{
-						this.encodeRing[i] = -1;
-					}
-					let index = 0;
-					while (this.pw.length < 256)
-					{
-						this.pw.push(pw[index]);
-						index = (index+1)%pw.length;
-					}
-					index = 0;
-					for (let i=0; i<256; i++)
-					{
-						let emptyCounter = 0;
-						let maxEmpty = 256-i;
-						let targetEmpty = 1+(this.pw[i] % maxEmpty);
-						while (emptyCounter < targetEmpty)
-						{
-							if (this.encodeRing[index] == -1)
-							{
-								emptyCounter++;
-							}
-							if (emptyCounter < targetEmpty)
-							{
-								index = (index+1)%256;
-							}
-						}
-						this.encodeRing[index] = i;
-					}
-					for (let i=0; i<256; i++)
-					{
-						this.decodeRing[this.encodeRing[i]] = i;
-					}
+					emptyCounter++;
 				}
-				encode(plain)
+				if (emptyCounter < targetEmpty)
 				{
-					let index = (this.offset+plain)%256;
-					let encoded = this.encodeRing[index];
-					this.offset = (this.offset+1)%256;
-					return encoded;
-				}
-				decode(encoded)
-				{
-					let decoded = this.decodeRing[encoded] - this.offset;
-					if (decoded < 0)
-					{
-						decoded += 256;
-					}
-					this.offset = (this.offset+1)%256;
-					return decoded;
+					index = (index+1)%256;
 				}
 			}
-			class Torus
+			this.encodeMap[index] = i;
+		}
+		for (let i=0; i<256; i++)
+		{
+			this.decodeMap[this.encodeMap[i]] = i;
+		}
+	}
+	/**
+	\pre typeof(plain) == "string"
+	\pre plain.length == 1
+	\post this.seed changed
+	*/
+	encode(plain)
+	{
+		let index = (this.seed+plain)%256;
+		let encoded = this.encodeMap[index];
+//		this.seed = (this.seed+1)%256;
+		return encoded;
+	}
+	/**
+	\pre typeof(plain) == "string"
+	\pre plain.length == 1
+	\post this.seed changed
+	*/
+	decode(encoded)
+	{
+		let decoded = this.decodeMap[encoded] - this.seed;
+		if (decoded < 0)
+		{
+			decoded += 256;
+		}
+//		this.seed = (this.seed+1)%256;
+		return decoded;
+	}
+}
+class PBox
+{
+	/**
+	\pre Array.isArray(pw)
+	\pre plain.length == 2048
+	*/
+	constructor(pw)
+	{
+		this.encodeMap = new Array(256*8);
+		this.decodeMap = new Array(256*8);
+		for (let i=0; i<256*8; i++)
+		{
+			this.encodeMap[i] = -1;
+		}
+		let index = 0;
+		for (let i=0; i<256*8; i++)
+		{
+			let emptyCounter = 0;
+			let maxEmpty = 256*8-i;
+			let targetEmpty = 1+(pw[i] % maxEmpty);
+			while (emptyCounter < targetEmpty)
 			{
-				constructor(pw, offsets, seed)
+				if (this.encodeMap[index] == -1)
 				{
-					if (typeof offsets == "undefined")
-					{
-						offsets = new Array(8);
-						for (let i=0; i<8; i++)
-						{ 
-							offsets[i] = getRandomInt(0, 255);
-						}
-					}
-					if (typeof seed == "undefined")
-					{
-						seed = new Array(256);
-						for (let i=0; i<256; i++)
-						{ 
-							seed[i] = getRandomInt(1, 255);
-						}
-					}
-					this.rings = new Array(8);
-					this.seed = seed.slice();
-					this.pw = pw.slice();
-					for (let i=0; i<8; i++)
-					{
-						let ring = new Ring(this.pw, offsets[i]);
-						this.rings[i] = ring;
-						this.pw.push(this.pw.shift());
-					}
+					emptyCounter++;
 				}
-				encode256(plain)
+				if (emptyCounter < targetEmpty)
 				{
-					let encoded = new Array(256);
-					for (let i=0; i<256; i++)
-					{
-						encoded[i] = plain[i];
-						for (let j=0; j<8; j++)
-						{ 
-							if ((this.seed[i] & (1<<j)) != 0)
-							{
-								let ring = this.rings[j];
-								encoded[i] = ring.encode(encoded[i]);
-							}
-						}
-						encoded[i] = encoded[i] ^ this.seed[i];
-					}
-					for (let j=0; j<8; j++)
-					{
-						let ring = this.rings[j];
-						let mixed = new Array(256);
-						for (let i=0; i<256; i++)
-						{
-							mixed[i] = encoded[i];
-						}
-						for (let i=0; i<256; i++)
-						{
-							encoded[ring.encodeRing[i]] = mixed[i];
-						}
-					}
-					let rows = new Array(16);
-					let columns = new Array(16);
-					for (let y=0; y<16; y++)
-					{
-						let row = 0;
-						for (let x=0; x<16; x++)
-						{
-							row = row^encoded[y*16+x];
-						}
-						rows[y] = row;
-					}
-					for (let x=0; x<16; x++)
-					{
-						let column = 0;
-						for (let y=0; y<16; y++)
-						{
-							column = column^encoded[y*16+x];
-						}
-						columns[y] = column;
-					}
-					for (let y=0; y<16; y++)
-					{
-						for (let x=0; x<16; x++)
-						{
-							encoded[y*16+x] = row[y]^column[x];
-						}
-						rows[y] = row;
-					}
-					for (let i=0; i<256; i++)
-					{
-						this.seed[i] = encoded[i] ^ this.seed[(i+1)%256];
-						if (this.seed[i] == 0)
-						{
-							this.seed[i] = 1;
-						}
-					}
-					return encoded;
-				}
-				encode(plain)
-				{
-					let length = plain.length;
-					while (plain.length%256 != 0)
-					{
-						plain.push(getRandomInt(0, 255));
-					}
-					let encodedBytes = 0;
-					let encoded = [];
-					while (encodedBytes < plain.length)
-					{
-						let plainPart = [];
-						for (let i=0; i<256; i++)
-						{
-							plainPart.push(plain[encodedBytes]);
-							encodedBytes++;
-						}
-						let encodedPart = this.encode256(plainPart);
-						for (let i=0; i<256; i++)
-						{
-							encoded.push(encodedPart[i]);
-						}
-					}
-					return {"length":length, "message":encoded};
-				}
-				decode256(encoded)
-				{
-					let decoded = new Array(256);
-					for (let i=0; i<256; i++)
-					{
-						decoded[i] = encoded[i];
-					}
-					let rows = new Array(16);
-					let columns = new Array(16);
-					for (let y=0; y<16; y++)
-					{
-						let row = 0;
-						for (let x=0; x<16; x++)
-						{
-							row = row^encoded[y*16+x];
-						}
-						rows[y] = row;
-					}
-					for (let x=0; x<16; x++)
-					{
-						let column = 0;
-						for (let y=0; y<16; y++)
-						{
-							column = column^encoded[y*16+x];
-						}
-						columns[y] = column;
-					}
-					for (let y=0; y<16; y++)
-					{
-						for (let x=0; x<16; x++)
-						{
-							encoded[y*16+x] = row[y]^column[x];
-						}
-						rows[y] = row;
-					}
-					for (let j=8-1; j>=0; j--)
-					{
-						let ring = this.rings[j];
-						let mixed = new Array(256);
-						for (let i=0; i<256; i++)
-						{
-							mixed[i] = decoded[i];
-						}
-						for (let i=256-1; i>=0; i--)
-						{
-							decoded[i] = mixed[ring.encodeRing[i]];
-						}
-					}
-					for (let i=0; i<256; i++)
-					{
-						decoded[i] = decoded[i] ^ this.seed[i];
-						for (let j=8-1; j>=0; j--)
-						{ 
-							if ((this.seed[i] & (1<<j)) != 0)
-							{
-								let ring = this.rings[j];
-								decoded[i] = ring.decode(decoded[i]);
-							}
-						}
-					}
-					for (let i=0; i<256; i++)
-					{
-						this.seed[i] = encoded[i] ^ this.seed[(i+1)%256];
-						if (this.seed[i] == 0)
-						{
-							this.seed[i] = 1;
-						}
-					}
-					return decoded;
-				}
-				decode(encodedJSON)
-				{
-					let length = encodedJSON["length"];
-					let encoded = encodedJSON["message"];
-					let decodedBytes = 0;
-					let decoded = [];
-					while (decodedBytes < encoded.length)
-					{
-						let encodedPart = [];
-						for (let i=0; i<256; i++)
-						{
-							encodedPart.push(encoded[decodedBytes]);
-							decodedBytes++;
-						}
-						let decodedPart = this.decode256(encodedPart);
-						for (let i=0; i<256; i++)
-						{
-							if (decoded.length < length)
-							{
-								decoded.push(decodedPart[i]);
-							}
-							else
-							{
-								break;
-							}
-						}
-					}
-					return decoded;
-				}
-				getOffsets()
-				{
-					let offsets = [];
-					for (let i=0; i<8; i++)
-					{
-						offsets.push(this.rings[i].offset);
-					}
-					return offsets;
-				}
-				getSeed()
-				{
-					let seed = [];
-					for (let i=0; i<256; i++)
-					{
-						seed[i] = this.seed[i];
-					}
-					return seed;
-				}
-				setOffsets(offsets)
-				{
-					for (let i=0; i<8; i++)
-					{
-						this.rings[i].offset = offsets[i];
-					}
-				}
-				setSeed(seed)
-				{
-					for (let i=0; i<256; i++)
-					{
-						this.seed[i] = seed[i];
-					}
+					index = (index+1)%(256*8);
 				}
 			}
+			this.encodeMap[index] = i;
+		}
+		for (let i=0; i<256*8; i++)
+		{
+			this.decodeMap[this.encodeMap[i]] = i;
+		}
+	}
+	/**
+	\pre Array.isArray(plain)
+	\pre plain.length == 256
+	*/
+	encode(plain)
+	{
+		let encoded = new Array(256);
+		for (let i=0; i<256; i++)
+		{
+			encoded[i] = 0;
+		}
+		for (let i=0; i<256; i++)
+		{
+			for (let b=0; b<8; b++)
+			{
+				let index = this.encodeMap[i*8+b];
+				if ((plain[i]) & (1<<b))
+				{
+					encoded[parseInt(index/8)] = encoded[parseInt(index/8)] + (1<<(index%8));
+				}
+			}
+		}
+		return encoded;
+	}
+	/**
+	\pre Array.isArray(plain)
+	\pre plain.length == 256
+	*/
+	decode(encoded)
+	{
+		let decoded = new Array(256);
+		for (let i=0; i<256; i++)
+		{
+			decoded[i] = 0;
+		}
+		for (let i=0; i<256; i++)
+		{
+			for (let b=0; b<8; b++)
+			{
+				let index = this.decodeMap[i*8+b];
+				if ((encoded[i]) & (1<<b))
+				{
+					decoded[parseInt(index/8)] = decoded[parseInt(index/8)] + (1<<(index%8));
+				}
+			}
+		}
+		return decoded;
+	}
+}
+function testPBox()
+{
+	let pw = new Array(2048);
+	for (let i=0; i<pw.length; i++)
+	{
+		pw[i] = getRandomInt(0, 255);
+	}
+	let plain = new Array(256);
+	for (let i=0; i<plain.length; i++)
+	{
+		plain[i] = getRandomInt(0, 255);
+	}
+	let pBox = new PBox(pw);
+	let encoded = pBox.encode(plain);
+	pBox = new PBox(pw);
+	let decoded = pBox.decode(encoded);
+	let matches = 0;
+	for (let i=0; i<plain.length; i++)
+	{
+		if (plain[i] == decoded[i])
+		{
+			matches++;
+		}
+	}
+	console.log("p "+(matches==plain.length));
+}
+class SPBox
+{
+	constructor(pw, seed)
+	{
+		this.sBoxes = new Array(8);
+		if (typeof seed == "undefined")
+		{
+			seed = new Array(256);
+			for (let i=0; i<256; i++)
+			{
+				seed[i] = getRandomInt(1, 255);
+			}
+		}
+		this.seed = seed.slice();
+		for (let s=0; s<8; s++)
+		{
+			let spw = new Array(256);
+			for (let i=0; i<256; i++)
+			{
+				spw[i] = pw[s*256+i];
+			}
+			this.sBoxes[s] = new SBox(spw, 0);
+		}
+		let ppw = new Array(2048);
+		for (let i=0; i<2048; i++)
+		{
+			ppw[i] = pw[8*256+i];
+		}
+		this.pBox = new PBox(ppw);
+		this.rounds = 8;
+	}
+	encodeRound(plain)
+	{
+		let encoded = new Array(256);
+		for (let i=0; i<256; i++)
+		{
+			encoded[i] = plain[i];
+			for (let j=0; j<8; j++)
+			{
+				if ((this.seed[i] & (1<<j)) != 0)
+				{
+					let sBox = this.sBoxes[j];
+					encoded[i] = sBox.encode(encoded[i]);
+				}
+			}
+		}
+		encoded = this.pBox.encode(encoded);
+		return encoded;
+	}
+	decodeRound(encoded)
+	{
+		let decoded = this.pBox.decode(encoded);
+		for (let i=0; i<256; i++)
+		{
+			for (let j=8-1; j>=0; j--)
+			{
+				if ((this.seed[i] & (1<<j)) != 0)
+				{
+					let sBox = this.sBoxes[j];
+					decoded[i] = sBox.decode(decoded[i]);
+				}
+			}
+		}
+		return decoded;
+	}
+	encodeRounds(plain)
+	{
+		let encoded = this.encodeRound(plain);
+		for (let i=0; i<this.rounds-1; i++)
+		{
+			encoded = this.encodeRound(encoded);
+		}
+		for (let i=0; i<256; i++)
+		{
+			this.seed[i] = encoded[i] ^ this.seed[i];
+			if (this.seed[i] == 0)
+			{
+				this.seed[i] = 1;
+			}
+		}
+		return encoded;
+	}
+	decodeRounds(encoded)
+	{
+		let decoded = this.decodeRound(encoded);
+		for (let i=0; i<this.rounds-1; i++)
+		{
+			decoded = this.decodeRound(decoded);
+		}
+		for (let i=0; i<256; i++)
+		{
+			this.seed[i] = encoded[i] ^ this.seed[i];
+			if (this.seed[i] == 0)
+			{
+				this.seed[i] = 1;
+			}
+		}
+		return decoded;
+	}
+	encode(plain)
+	{
+		let length = plain.length;
+		while (plain.length%256 != 0)
+		{
+			plain.push(getRandomInt(0, 255));
+		}
+		let encodedBytes = 0;
+		let encoded = [];
+		while (encodedBytes < plain.length)
+		{
+			let plainPart = new Array(256);
+			for (let i=0; i<256; i++)
+			{
+				plainPart[i] = plain[encodedBytes];
+				encodedBytes++;
+			}
+			let encodedPart = this.encodeRounds(plainPart);
+			for (let i=0; i<256; i++)
+			{
+				encoded.push(encodedPart[i]);
+			}
+		}
+		return {"length":length, "message":encoded};
+	}
+	decode(encodedJSON)
+	{
+		let length = encodedJSON["length"];
+		let encoded = encodedJSON["message"];
+		let decodedBytes = 0;
+		let decoded = [];
+		while (decodedBytes < encoded.length)
+		{
+			let encodedPart = [];
+			for (let i=0; i<256; i++)
+			{
+				encodedPart.push(encoded[decodedBytes]);
+				decodedBytes++;
+			}
+			let decodedPart = this.decodeRounds(encodedPart);
+			for (let i=0; i<256; i++)
+			{
+				if (decoded.length < length)
+				{
+					decoded.push(decodedPart[i]);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		return decoded;
+	}
+	getSeed()
+	{
+		let seed = [];
+		for (let i=0; i<256; i++)
+		{
+			seed[i] = this.seed[i];
+		}
+		return seed;
+	}
+	setSeed(seed)
+	{
+		for (let i=0; i<256; i++)
+		{
+			this.seed[i] = seed[i];
+		}
+	}
+}
+function testSPBox()
+{
+	let pw = new Array(4096);
+	for (let i=0; i<pw.length; i++)
+	{
+		pw[i] = getRandomInt(0, 255);
+	}
+	let seed = new Array(256);
+	for (let i=0; i<seed.length; i++)
+	{
+		seed[i] = getRandomInt(1, 255);
+	}
+	let plain = new Array(256);
+	for (let i=0; i<plain.length; i++)
+	{
+		plain[i] = getRandomInt(0, 255);
+	}
+	let spBox = new SPBox(pw, seed);
+	let encoded = spBox.encode(plain);
+	spBox = new SPBox(pw, seed);
+	let decoded = spBox.decode(encoded);
+	let matches = 0;
+	for (let i=0; i<plain.length; i++)
+	{
+		if (plain[i] == decoded[i])
+		{
+			matches++;
+		}
+	}
+	console.log("sp "+(matches == plain.length));
+}
 			function send()
 			{
 				let input = document.getElementById("input");
@@ -368,7 +428,7 @@
 				}
 				let json = {};
 				json["username"] = username;
-				if (torus === null)
+				if (sp === null)
 				{
 					json["encoded"] = false;
 					json["plainMessage"] = input.value;
@@ -377,14 +437,19 @@
 				{
 					let message = input.value;
 					json["encoded"] = true;
-					json["offsets"] = torus.getOffsets();
-					json["seed"] = torus.getSeed();
+					let seed = new Array(256);
+					for (let i=0; i<256; i++)
+					{
+						seed[i] = getRandomInt(1, 255);
+					}
+					sp.setSeed(seed);
+					json["seed"] = sp.getSeed();
 					let plainMessage = [];
 					for (let i=0; i<message.length; i++)
 					{
 						plainMessage.push(message.charCodeAt(i));
 					}
-					let encodedMessage = torus.encode(plainMessage);
+					let encodedMessage = sp.encode(plainMessage);
 					json["encodedMessage"] = encodedMessage;
 				}
 				input.value = "";
@@ -396,7 +461,7 @@
 				let password = document.getElementById("password").value;
 				if (password == "")
 				{
-					torus = null;
+					sp = null;
 				}
 				else
 				{
@@ -424,7 +489,13 @@
 				{
 					asInt.push(pw.charCodeAt(i));
 				}
-				torus = new Torus(asInt);
+				let pwIndex = 0;
+				while (asInt.length < 4096)
+				{
+					asInt.push(pw.charCodeAt(pwIndex%pw.length));
+					pwIndex++;
+				}
+				sp = new SPBox(asInt);
 			}
 			function useUsername()
 			{
@@ -498,209 +569,113 @@
 					alert("DBError");
 				};
 			}
-function msToTime(duration) {
-    var milliseconds = parseInt((duration%1000)/100)
-        , seconds = parseInt((duration/1000)%60)
-        , minutes = parseInt((duration/(1000*60))%60)
-        , hours = parseInt((duration/(1000*60*60))%24);
+			function msToTime(duration)
+			{
+				var milliseconds = parseInt((duration%1000)/100)
+					, seconds = parseInt((duration/1000)%60)
+					, minutes = parseInt((duration/(1000*60))%60)
+					, hours = parseInt((duration/(1000*60*60))%24);
 
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
+				hours = (hours < 10) ? "0" + hours : hours;
+				minutes = (minutes < 10) ? "0" + minutes : minutes;
+				seconds = (seconds < 10) ? "0" + seconds : seconds;
 
-    return hours + ":" + minutes + ":" + seconds;
-}
+				return hours + ":" + minutes + ":" + seconds;
+			}
 		</script>
-    </head>
-    <body>
-        {% block body %}
-            {% block bodycontent %}
-		<center>
-            <div class='container'>
-                <div class='row'>
-                    <div class='col-xs-12'>
-						<form>
-							Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
-							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
-							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="256" min="1" max ="256"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
-							<textarea disabled rows="30" cols="126" id="output"></textarea><br/>
-							<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
-						</form>
-						<script>
-							let username = "Unknown User";
-							document.getElementById("username").value = username;
-							let torus = null;
-							let passwordFileContent = "";
-							document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
-							let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-							socket.open();
-							socket.on("receiveMessage", function(json)
-							{
-								console.log(json);
-								let user = json["username"];
-								let encoded = json["encoded"];
-								let message = "";
-								let millis = json["time"];
-								if (encoded)
+	</head>
+	<body>
+		{% block body %}
+			{% block bodycontent %}
+			<center>
+				<div class='container'>
+					<div class='row'>
+						<div class='col-xs-12'>
+							<form>
+								Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
+								Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
+								Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="4096" min="1" max ="4096"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
+								<textarea readonly rows="30" cols="126" id="output"></textarea><br/>
+								<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
+							</form>
+							<script>
+								let username = "Unknown User";
+								document.getElementById("username").value = username;
+								let sp = null;
+								let passwordFileContent = "";
+								document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
+								let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+								socket.open();
+								socket.on("receiveMessage", function(json)
 								{
-									if (torus)
+									console.log(json);
+									let user = json["username"];
+									let encoded = json["encoded"];
+									let message = "";
+									let millis = json["time"];
+									if (encoded)
 									{
-										let offsets = json["offsets"];
-										let seed = json["seed"];
-										torus.setSeed(seed);
-										torus.setOffsets(offsets);
-										let encodedMessage = json["encodedMessage"];
-										let decodedMessage = torus.decode(encodedMessage);
-										message = "<"+msToTime(millis)+">["+user+"] ";
-										for (let i=0; i<decodedMessage.length; i++)
+										if (sp)
 										{
-											message += String.fromCharCode(decodedMessage[i]);
+											let seed = json["seed"];
+											sp.setSeed(seed);
+											let encodedMessage = json["encodedMessage"];
+											let decodedMessage = sp.decode(encodedMessage);
+											message = "<"+msToTime(millis)+">["+user+"] ";
+											for (let i=0; i<decodedMessage.length; i++)
+											{
+												message += String.fromCharCode(decodedMessage[i]);
+											}
+											message += "\n";
 										}
-										message += "\n";
 									}
-								}
-								else
-								{
-									let plainMessage = json["plainMessage"];
-									message = "<"+msToTime(millis)+">["+user+"] (unencoded) "+plainMessage+"\n";
-								}
-								document.getElementById("output").value += message;
-							});
-							let db = null;
-							initDB(function(event)
-							{
-								let req = db.transaction(["settings"]).objectStore("settings").get(0);
-								req.onerror = function(event)
-								{
-									alert("DatabaseError");
-								};
-								req.onsuccess = function(event)
-								{
-									if (req.result)
+									else
 									{
-										username = req.result["username"];
-										document.getElementById("username").value = username;
+										let plainMessage = json["plainMessage"];
+										message = "<"+msToTime(millis)+">["+user+"] (unencoded) "+plainMessage+"\n";
 									}
-								};
-							});
-							document.getElementById("input").addEventListener ("keydown", function(event) {
-								if (event.keyCode == 13)
+									document.getElementById("output").value += message;
+								});
+								let db = null;
+								initDB(function(event)
 								{
-									send();
-								}
-							});
-function testRing()
-{
-	let pw = [];
-	let message = [];
-	for (let i=0; i<256; i++)
-	{ 
-		pw.push(getRandomInt(0, 255));
-		message.push(getRandomInt(0, 255));
-	}
-	let offset = getRandomInt(0, 255);
-	let ring = new Ring(pw, offset);
-	let encodedMessage = []
-	for (let i=0; i<256; i++)
-	{
-		encodedMessage.push(ring.encode(message[i]));
-	}
-	ring = new Ring(pw, offset);
-	let decodedMessage = []
-	for (let i=0; i<256; i++)
-	{
-		decodedMessage.push(ring.decode(encodedMessage[i]));
-	}
-	let ok = 0;
-	for (let i=0; i<256; i++)
-	{
-		if (decodedMessage[i] == message[i])
-		{
-			ok++;
-		}
-	}
-	console.log(ok);
-}
-function testTorus256()
-{
-	let pw = [];
-	let message = [];
-	let offsets = [];
-	let seed = [];
-	let length = 256;
-	for (let i=0; i<256; i++)
-	{ 
-		pw.push(getRandomInt(0, 255));
-		offsets.push(getRandomInt(0, 255));
-		seed.push(getRandomInt(1, 255));
-	}
-	for (let i=0; i<length; i++)
-	{ 
-		message.push(getRandomInt(0, 255));
-	}
-	let torus = new Torus(pw, offsets, seed);
-	let encodedMessage = torus.encode256(message);
-	torus = new Torus(pw, offsets, seed);
-	let decodedMessage = torus.decode256(encodedMessage);
-	let ok = 0;
-	for (let i=0; i<length; i++)
-	{
-		if (decodedMessage[i] == message[i])
-		{
-			ok++;
-		}
-	}
-	console.log(ok);
-}
-function testTorus(length)
-{
-	let pw = [];
-	let message = [];
-	let offsets = [];
-	let seed = [];
-	for (let i=0; i<256; i++)
-	{ 
-		pw.push(getRandomInt(0, 255));
-		offsets.push(getRandomInt(0, 255));
-		seed.push(getRandomInt(1, 255));
-	}
-	for (let i=0; i<length; i++)
-	{ 
-		message.push(getRandomInt(0, 255));
-	}
-	let torus = new Torus(pw, offsets, seed);
-	let encodedMessage = torus.encode(message);
-	torus = new Torus(pw, offsets, seed);
-	let decodedMessage = torus.decode(encodedMessage);
-	let ok = 0;
-	for (let i=0; i<length; i++)
-	{
-		if (decodedMessage[i] == message[i])
-		{
-			ok++;
-		}
-	}
-	console.log(ok);
-}
-testRing();
-testTorus256();
-testTorus(256);
-testTorus(512);
-						</script>
-                    </div>
-		</div>
-            </div>
-		</center>
-            {% endblock bodycontent %}
-            {% block footer %}
-            <footer class='footer'>
-		<center>
-                <div class='container'>
-                    <span class='text-muted'><a href='/impressum'>Impressum</a></span>
-                </div>
-		</center>
-            </footer>
-            {% endblock footer %}
-        {% endblock body %}
-    </body>
+									let req = db.transaction(["settings"]).objectStore("settings").get(0);
+									req.onerror = function(event)
+									{
+										alert("DatabaseError");
+									};
+									req.onsuccess = function(event)
+									{
+										if (req.result)
+										{
+											username = req.result["username"];
+											document.getElementById("username").value = username;
+										}
+									};
+								});
+								document.getElementById("input").addEventListener ("keydown", function(event) {
+									if (event.keyCode == 13)
+									{
+										send();
+									}
+								});
+								testPBox();
+								testSPBox();
+							</script>
+						</div>
+					</div>
+				</div>
+			</center>
+			{% endblock bodycontent %}
+			{% block footer %}
+			<footer class='footer'>
+				<center>
+					<div class='container'>
+						<span class='text-muted'><a href='/impressum'>Impressum</a></span>
+					</div>
+				</center>
+			</footer>
+			{% endblock footer %}
+		{% endblock body %}
+	</body>
 </html>
