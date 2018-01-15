@@ -618,6 +618,7 @@ function testSPBox()
 								toolbar: false,
 							});
 							output.togglePreview();
+							output.codemirror.readOnly = true;
 							let username = "Unknown User";
 							document.getElementById("username").value = username;
 							let sp = null;
