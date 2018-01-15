@@ -618,6 +618,21 @@ function testSPBox()
 										className: "fa fa-strikethrough",
 										title: "Strikethrough",
 									},"|",{
+										name: "heading1",
+										action: SimpleMDE.toggleHeading1,
+										className: "fa fa-header fa-header-x fa-header-1",
+										title: "Heading1",
+									},{
+										name: "heading2",
+										action: SimpleMDE.toggleHeading2,
+										className: "fa fa-header fa-header-x fa-header-2",
+										title: "Heading2",
+									},{
+										name: "heading3",
+										action: SimpleMDE.toggleHeading3,
+										className: "fa fa-header fa-header-x fa-header-3",
+										title: "Heading3",
+									},"|",{
 										name: "quote",
 										action: SimpleMDE.toggleBlockquote,
 										className: "fa fa-quote-left",
@@ -631,47 +646,47 @@ function testSPBox()
 										name: "unordered-list",
 										action: SimpleMDE.toggleUnorderedList,
 										className: "fa fa-list-ul",
-										title: "unordered-list",
+										title: "Unordered List",
 									},{
 										name: "ordered-list",
 										action: SimpleMDE.toggleOrderedList,
 										className: "fa fa-list-ol",
-										title: "ordered-list",
+										title: "Ordered List",
 									},"|",{
 										name: "clean-block",
 										action: SimpleMDE.cleanBlock,
 										className: "fa fa-eraser fa-clean-block",
-										title: "clean-block",
+										title: "Clean Block",
 									},{
 										name: "link",
 										action: SimpleMDE.drawLink,
 										className: "fa fa-link",
-										title: "link",
+										title: "Link",
 									},{
 										name: "image",
 										action: SimpleMDE.drawImage,
 										className: "fa fa-picture-o",
-										title: "image",
+										title: "Image",
 									},{
 										name: "table",
 										action: SimpleMDE.drawTable,
 										className: "fa fa-table",
-										title: "table",
+										title: "Table",
 									},"|",{
 										name: "horizontal-rule",
 										action: SimpleMDE.drawHorizontalRule,
 										className: "fa fa-minus",
-										title: "horizontal-rule",
+										title: "Horizontal Rule",
 									},{
 										name: "preview",
 										action: SimpleMDE.togglePreview,
 										className: "fa fa-eye no-disable",
-										title: "preview",
+										title: "Preview",
 									},{
 										name: "guide",
 										action: "https://simplemde.com/markdown-guide",
 										className: "fa fa-question-circle",
-										title: "guide",
+										title: "Markdown Guide",
 									},
 								],
 							});
