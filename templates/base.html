@@ -462,6 +462,7 @@ function testSPBox()
 				if (password == "")
 				{
 					sp = null;
+					socket.emit("sendMetaMessage", {"user":username,"pw":0});
 				}
 				else
 				{
@@ -484,6 +485,7 @@ function testSPBox()
 			}
 			function updatePassword(pw)
 			{
+				socket.emit("sendMetaMessage", {"user":username,"pw":1});
 				let asInt = [];
 				for (let i=0; i<pw.length; i++)
 				{
@@ -506,7 +508,9 @@ function testSPBox()
 				};
 				request.onsuccess = function(event)
 				{
+					let oldUsername = username;
 					username = document.getElementById("username").value;
+					socket.emit("sendMetaMessage", {"user":username,"oldUser":oldUsername});
 					let settings = {"id":0, "username":username};
 					let req = db.transaction(["settings"], "readwrite").objectStore("settings").put(settings);
 					req.onerror = function(event)
@@ -636,6 +640,38 @@ function testSPBox()
 									}
 									document.getElementById("output").value += message;
 								});
+								socket.on("receiveMetaMessage", function(json)
+								{
+									console.log(json);
+									let user = json["user"];
+									message = "";
+									if ("oldUser" in json)
+									{
+										let oldUser = json["oldUser"];
+										message = "["+oldUser+"] renamed to ["+user+"]";
+									}
+									if ("oldUser" in json)
+									{
+										let pw = json["pw"];
+										if (pw == 0)
+										{
+											message = "["+user+"] removed password";
+										}
+										if (pw == 1)
+										{
+											message = "["+user+"] changed password";
+										}
+									}
+									if ("connected" in json)
+									{
+										message = "user connected";
+									}
+									if ("disconnected" in json)
+									{
+										message = "user disconnected";
+									}
+									document.getElementById("output").value += message;
+								});
 								let db = null;
 								initDB(function(event)
 								{
@@ -648,8 +684,10 @@ function testSPBox()
 									{
 										if (req.result)
 										{
+											let oldUsername = username;
 											username = req.result["username"];
 											document.getElementById("username").value = username;
+											socket.emit("sendMetaMessage", {"user":username,"oldUser":oldUsername});
 										}
 									};
 								});

@@ -75,25 +75,22 @@ def sendMessage(json):
 	json["time"] = millis
 	emit("receiveMessage", json, room=room)
 
-@socketio.on("createRoom")
-def createRoom(json):
+@socketio.on("sendMetaMessage")
+def handleSendMetaMessage(json):
 	logger.info(json)
-	connection = sqlite3.connect(DBNAME, check_same_thread = False)
-	cursor = connection.cursor()
-	cursor.execute("INSERT INTO rooms (name, users) VALUES ('', 0)")
-	room = cursor.lastrowid
-	connection.commit()
-	connection.close()
-	emit("createRooms", {"rooms":[room]}, room=0)
+	emit("receiveMetaMessage", json, room=0)
 
 @socketio.on("connect")
 def handleConnect():
 	joinRoom(0)
+	emit("receiveMetaMessage", {"connected":True}, room=0)
+	emit("createRooms", {"rooms":[0]}, room=0)
 
 @socketio.on("disconnect")
 def handleDisconnect():
 	room = session["room"]
 	leaveRoom(room)
+	emit("receiveMetaMessage", {"disconnected":True}, room=0)
 
 @socketio.on_error_default
 def error_handler(e):
