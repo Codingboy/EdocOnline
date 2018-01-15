@@ -632,7 +632,7 @@ function testSPBox()
 											sp.setSeed(seed);
 											let encodedMessage = json["encodedMessage"];
 											let decodedMessage = sp.decode(encodedMessage);
-											message = "**<"+msToTime(millis)+">["+user+"]:** ";
+											message = "**"+msToTime(millis)+" "+user+":** ";
 											for (let i=0; i<decodedMessage.length; i++)
 											{
 												message += String.fromCharCode(decodedMessage[i]);
@@ -643,7 +643,7 @@ function testSPBox()
 									else
 									{
 										let plainMessage = json["plainMessage"];
-										message = "**<"+msToTime(millis)+">["+user+"](unencoded):** "+plainMessage+"\n";
+										message = "**"+msToTime(millis)+" "+user+" (unencoded):** "+plainMessage+"\n";
 									}
 									mde.value(mde.value()+message);
 								});
@@ -656,27 +656,27 @@ function testSPBox()
 									if ("oldUser" in json)
 									{
 										let oldUser = json["oldUser"];
-										message = "**<"+msToTime(millis)+">["+oldUser+"](meta):** renamed to ["+user+"]\n";
+										message = "**"+msToTime(millis)+" "+oldUser+" (meta):** renamed to \""+user+"\"\n";
 									}
 									if ("pw" in json)
 									{
 										let pw = json["pw"];
 										if (pw == 0)
 										{
-											message = "**<"+msToTime(millis)+">["+user+"](meta):** removed password\n";
+											message = "**"+msToTime(millis)+" "+user+" (meta):** removed password\n";
 										}
 										if (pw == 1)
 										{
-											message = "**<"+msToTime(millis)+">["+user+"](meta):** changed password\n";
+											message = "**"+msToTime(millis)+" "+user+" (meta):** changed password\n";
 										}
 									}
 									if ("connected" in json)
 									{
-										message = "**<"+msToTime(millis)+">["+user+"](meta):** connected\n";
+										message = "**"+msToTime(millis)+" "+user+" (meta):** connected\n";
 									}
 									if ("disconnected" in json)
 									{
-										message = "**<"+msToTime(millis)+">["+user+"](meta):** disconnected\n";
+										message = "**"+msToTime(millis)+" "+user+" (meta):** disconnected\n";
 									}
 									mde.value(mde.value()+message);
 								});
