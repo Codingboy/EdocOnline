@@ -654,11 +654,12 @@ function testSPBox()
 				<div class='row'>
 					<div class='col-xs-12'>
 						<form>
+							<textarea readonly id="output"></textarea><br/>
+							<textarea id="input"></textarea><input type="button" value="Send" onclick="send()">
 							Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
 							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
 							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="4096" min="1" max ="4096"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
-							<textarea readonly id="output"></textarea><br/>
-							<textarea id="input"></textarea><input type="button" value="Send" onclick="send()">
+
 						</form>
 						<script>
 							let input = new SimpleMDE({
@@ -766,7 +767,7 @@ function testSPBox()
 									codeSyntaxHighlighting: true,
 								},
 							});
-							output.codemirror.setSize(1000, 450);
+							output.codemirror.setSize(1000, 600);
 							output.togglePreview();
 							output.codemirror.readOnly = true;
 							let username = "Unknown User";
