@@ -650,7 +650,7 @@ function testSPBox()
 										let oldUser = json["oldUser"];
 										message = "["+oldUser+"] renamed to ["+user+"]\n";
 									}
-									if ("oldUser" in json)
+									if ("pw" in json)
 									{
 										let pw = json["pw"];
 										if (pw == 0)
