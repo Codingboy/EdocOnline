@@ -81,16 +81,14 @@ class SBox
 		}
 	}
 	/**
-	\pre typeof(plain) == "string"
-	\pre plain.length == 1
+	\pre typeof(plain) == "number"
 	*/
 	encode(plain)
 	{
 		return this.encodeMap[plain];
 	}
 	/**
-	\pre typeof(encoded) == "string"
-	\pre encoded.length == 1
+	\pre typeof(encoded) == "number"
 	*/
 	decode(encoded)
 	{
@@ -392,6 +390,7 @@ class SPBox
 }
 function testSBox()
 {
+	return;
 	let pw = new Array(256);
 	for (let i=0; i<pw.length; i++)
 	{
