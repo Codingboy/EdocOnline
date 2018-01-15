@@ -78,19 +78,21 @@ def sendMessage(json):
 @socketio.on("sendMetaMessage")
 def handleSendMetaMessage(json):
 	logger.info(json)
+	if ("oldUser" in json):
+		session["user"] = json["user"]
 	emit("receiveMetaMessage", json, room=0)
 
 @socketio.on("connect")
 def handleConnect():
 	joinRoom(0)
-	emit("receiveMetaMessage", {"connected":True}, room=0)
+	emit("receiveMetaMessage", {"connected":True,"user":"Unknown User"}, room=0)
 	emit("createRooms", {"rooms":[0]}, room=0)
 
 @socketio.on("disconnect")
 def handleDisconnect():
 	room = session["room"]
 	leaveRoom(room)
-	emit("receiveMetaMessage", {"disconnected":True}, room=0)
+	emit("receiveMetaMessage", {"user":session["user"],"disconnected":True}, room=0)
 
 @socketio.on_error_default
 def error_handler(e):

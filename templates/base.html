@@ -648,27 +648,27 @@ function testSPBox()
 									if ("oldUser" in json)
 									{
 										let oldUser = json["oldUser"];
-										message = "["+oldUser+"] renamed to ["+user+"]";
+										message = "["+oldUser+"] renamed to ["+user+"]\n";
 									}
 									if ("oldUser" in json)
 									{
 										let pw = json["pw"];
 										if (pw == 0)
 										{
-											message = "["+user+"] removed password";
+											message = "["+user+"] removed password\n";
 										}
 										if (pw == 1)
 										{
-											message = "["+user+"] changed password";
+											message = "["+user+"] changed password\n";
 										}
 									}
 									if ("connected" in json)
 									{
-										message = "user connected";
+										message = "["+user+"] connected\n";
 									}
 									if ("disconnected" in json)
 									{
-										message = "user disconnected";
+										message = "["+user+"] disconnected\n";
 									}
 									document.getElementById("output").value += message;
 								});
