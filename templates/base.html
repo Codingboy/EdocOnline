@@ -30,6 +30,10 @@
 			{
 				width: 75%;
 			}
+			.container
+			{
+				align: center;
+			}
 			.footer
 			{
 				position: absolute;
@@ -593,125 +597,123 @@ function testSPBox()
 	<body>
 		{% block body %}
 			{% block bodycontent %}
-			<center>
-				<div class='container'>
-					<div class='row'>
-						<div class='col-xs-12'>
-							<form>
-								Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
-								Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
-								Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="4096" min="1" max ="4096"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
-								<textarea readonly rows="30" cols="126" id="output"></textarea><br/>
-								<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
-							</form>
-							<script>
-								let mde = new SimpleMDE({
-									element: document.getElementById("output"),
-									status: false,
-									toolbar: false,
-								});
-								let username = "Unknown User";
-								document.getElementById("username").value = username;
-								let sp = null;
-								let passwordFileContent = "";
-								document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
-								let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-								socket.open();
-								socket.on("receiveMessage", function(json)
+			<div class='container'>
+				<div class='row'>
+					<div class='col-xs-12'>
+						<form>
+							Username: <input type="text" name="username" id="username"><input type="button" value="Use Username" onclick="useUsername()"><br/>
+							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
+							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="4096" min="1" max ="4096"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
+							<textarea readonly rows="30" cols="126" id="output"></textarea><br/>
+							<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
+						</form>
+						<script>
+							let mde = new SimpleMDE({
+								element: document.getElementById("output"),
+								status: false,
+								toolbar: false,
+							});
+							let username = "Unknown User";
+							document.getElementById("username").value = username;
+							let sp = null;
+							let passwordFileContent = "";
+							document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
+							let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+							socket.open();
+							socket.on("receiveMessage", function(json)
+							{
+								console.log(json);
+								let user = json["username"];
+								let encoded = json["encoded"];
+								let message = "";
+								let millis = json["time"];
+								if (encoded)
 								{
-									console.log(json);
-									let user = json["username"];
-									let encoded = json["encoded"];
-									let message = "";
-									let millis = json["time"];
-									if (encoded)
+									if (sp)
 									{
-										if (sp)
+										let seed = json["seed"];
+										sp.setSeed(seed);
+										let encodedMessage = json["encodedMessage"];
+										let decodedMessage = sp.decode(encodedMessage);
+										message = "**"+msToTime(millis)+" "+user+":** ";
+										for (let i=0; i<decodedMessage.length; i++)
 										{
-											let seed = json["seed"];
-											sp.setSeed(seed);
-											let encodedMessage = json["encodedMessage"];
-											let decodedMessage = sp.decode(encodedMessage);
-											message = "**"+msToTime(millis)+" "+user+":** ";
-											for (let i=0; i<decodedMessage.length; i++)
-											{
-												message += String.fromCharCode(decodedMessage[i]);
-											}
-											message += "\n";
+											message += String.fromCharCode(decodedMessage[i]);
 										}
+										message += "\n";
 									}
-									else
-									{
-										let plainMessage = json["plainMessage"];
-										message = "**"+msToTime(millis)+" "+user+" (unencoded):** "+plainMessage+"\n";
-									}
-									mde.value(mde.value()+message);
-								});
-								socket.on("receiveMetaMessage", function(json)
+								}
+								else
 								{
-									console.log(json);
-									let user = json["user"];
-									let millis = json["time"];
-									message = "";
-									if ("oldUser" in json)
-									{
-										let oldUser = json["oldUser"];
-										message = "**"+msToTime(millis)+" "+oldUser+" (meta):** renamed to \""+user+"\"\n";
-									}
-									if ("pw" in json)
-									{
-										let pw = json["pw"];
-										if (pw == 0)
-										{
-											message = "**"+msToTime(millis)+" "+user+" (meta):** removed password\n";
-										}
-										if (pw == 1)
-										{
-											message = "**"+msToTime(millis)+" "+user+" (meta):** changed password\n";
-										}
-									}
-									if ("connected" in json)
-									{
-										message = "**"+msToTime(millis)+" "+user+" (meta):** connected\n";
-									}
-									if ("disconnected" in json)
-									{
-										message = "**"+msToTime(millis)+" "+user+" (meta):** disconnected\n";
-									}
-									mde.value(mde.value()+message);
-								});
-								let db = null;
-								initDB(function(event)
+									let plainMessage = json["plainMessage"];
+									message = "**"+msToTime(millis)+" "+user+" (unencoded):** "+plainMessage+"\n";
+								}
+								mde.value(mde.value()+message);
+							});
+							socket.on("receiveMetaMessage", function(json)
+							{
+								console.log(json);
+								let user = json["user"];
+								let millis = json["time"];
+								message = "";
+								if ("oldUser" in json)
 								{
-									let req = db.transaction(["settings"]).objectStore("settings").get(0);
-									req.onerror = function(event)
+									let oldUser = json["oldUser"];
+									message = "**"+msToTime(millis)+" "+oldUser+" (meta):** renamed to \""+user+"\"\n";
+								}
+								if ("pw" in json)
+								{
+									let pw = json["pw"];
+									if (pw == 0)
 									{
-										alert("DatabaseError");
-									};
-									req.onsuccess = function(event)
-									{
-										if (req.result)
-										{
-											let oldUsername = username;
-											username = req.result["username"];
-											document.getElementById("username").value = username;
-											socket.emit("sendMetaMessage", {"user":username,"oldUser":oldUsername});
-										}
-									};
-								});
-								document.getElementById("input").addEventListener ("keydown", function(event) {
-									if (event.keyCode == 13)
-									{
-										send();
+										message = "**"+msToTime(millis)+" "+user+" (meta):** removed password\n";
 									}
-								});
-								testPBox();
-								testSPBox();
-							</script>
-						</div>
+									if (pw == 1)
+									{
+										message = "**"+msToTime(millis)+" "+user+" (meta):** changed password\n";
+									}
+								}
+								if ("connected" in json)
+								{
+									message = "**"+msToTime(millis)+" "+user+" (meta):** connected\n";
+								}
+								if ("disconnected" in json)
+								{
+									message = "**"+msToTime(millis)+" "+user+" (meta):** disconnected\n";
+								}
+								mde.value(mde.value()+message);
+							});
+							let db = null;
+							initDB(function(event)
+							{
+								let req = db.transaction(["settings"]).objectStore("settings").get(0);
+								req.onerror = function(event)
+								{
+									alert("DatabaseError");
+								};
+								req.onsuccess = function(event)
+								{
+									if (req.result)
+									{
+										let oldUsername = username;
+										username = req.result["username"];
+										document.getElementById("username").value = username;
+										socket.emit("sendMetaMessage", {"user":username,"oldUser":oldUsername});
+									}
+								};
+							});
+							document.getElementById("input").addEventListener ("keydown", function(event) {
+								if (event.keyCode == 13)
+								{
+									send();
+								}
+							});
+							testPBox();
+							testSPBox();
+						</script>
 					</div>
 				</div>
-			</center>
+			</div>
 			{% endblock bodycontent %}
 			{% block footer %}
 			<footer class='footer'>
