@@ -612,11 +612,13 @@ function testSPBox()
 								element: document.getElementById("input"),
 								status: true,
 							});
+							input.codemirror.setSize(500, 100);
 							let output = new SimpleMDE({
 								element: document.getElementById("output"),
 								status: false,
 								toolbar: false,
 							});
+							output.codemirror.setSize(500, 450);
 							output.togglePreview();
 							output.codemirror.readOnly = true;
 							let username = "Unknown User";
