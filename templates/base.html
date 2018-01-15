@@ -390,7 +390,6 @@ class SPBox
 }
 function testSBox()
 {
-	return;
 	let pw = new Array(256);
 	for (let i=0; i<pw.length; i++)
 	{
@@ -402,11 +401,17 @@ function testSBox()
 		plain[i] = getRandomInt(0, 255);
 	}
 	let sBox = new SBox(pw);
-	let encoded = sBox.encode(plain);
-console.log(encoded);
+	let encoded = new Array(plain.length);
+	for (let i=0; i<plain.length; i++)
+	{
+		encoded[i] = sBox.encode(plain[i]);
+	}
 	sBox = new SBox(pw);
-	let decoded = sBox.decode(encoded);
-console.log(decoded);
+	let decoded = new Array(plain.length);
+	for (let i=0; i<plain.length; i++)
+	{
+		decoded[i] = sBox.encode(encoded[i]);
+	}
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
 	{
