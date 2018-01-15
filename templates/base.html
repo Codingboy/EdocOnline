@@ -617,7 +617,7 @@ function testSPBox()
 										action: SimpleMDE.toggleStrikethrough,
 										className: "fa fa-strikethrough",
 										title: "Strikethrough",
-									},{
+									},"|",{
 										name: "quote",
 										action: SimpleMDE.toggleBlockquote,
 										className: "fa fa-quote-left",
@@ -627,8 +627,52 @@ function testSPBox()
 										action: SimpleMDE.toggleCodeBlock,
 										className: "fa fa-code",
 										title: "Code",
+									},"|",{
+										name: "unordered-list",
+										action: SimpleMDE.toggleUnorderedList,
+										className: "fa fa-list-ul",
+										title: "unordered-list",
+									},{
+										name: "ordered-list",
+										action: SimpleMDE.toggleOrderedList,
+										className: "fa fa-list-ol",
+										title: "ordered-list",
+									},"|",{
+										name: "clean-block",
+										action: SimpleMDE.cleanBlock,
+										className: "fa fa-eraser fa-clean-block",
+										title: "clean-block",
+									},{
+										name: "link",
+										action: SimpleMDE.drawLink,
+										className: "fa fa-link",
+										title: "link",
+									},{
+										name: "image",
+										action: SimpleMDE.drawImage,
+										className: "fa fa-picture-o",
+										title: "image",
+									},{
+										name: "table",
+										action: SimpleMDE.drawTable,
+										className: "fa fa-table",
+										title: "table",
+									},"|",{
+										name: "horizontal-rule",
+										action: SimpleMDE.drawHorizontalRule,
+										className: "fa fa-minus",
+										title: "horizontal-rule",
+									},{
+										name: "preview",
+										action: SimpleMDE.togglePreview,
+										className: "fa fa-eye no-disable",
+										title: "preview",
+									},{
+										name: "guide",
+										action: "https://simplemde.com/markdown-guide",
+										className: "fa fa-question-circle",
+										title: "guide",
 									},
-									"|", // Separator
 								],
 							});
 							input.codemirror.setSize(1000, 50);
