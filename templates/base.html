@@ -594,7 +594,7 @@ function testSPBox()
 			}
 		</script>
 	</head>
-	<body>
+	<body id="body">
 		{% block body %}
 			{% block bodycontent %}
 			<div class='container'>
@@ -710,7 +710,7 @@ function testSPBox()
 									}
 								};
 							});
-							document.getElementByClass("body").addEventListener ("keydown", function(event) {
+							document.getElementById("body").addEventListener ("keydown", function(event) {
 								if (event.keyCode == 13 && ctrlKey)
 								{
 									send();
