@@ -26,15 +26,6 @@
 				padding-bottom: 5%;
 				margin-bottom: 60px
 			}
-			#input
-			{
-				width: 75%;
-				height: 100px;
-			}
-			#output
-			{
-				height: 450px;
-			}
 			.footer
 			{
 				position: absolute;
@@ -612,13 +603,13 @@ function testSPBox()
 								element: document.getElementById("input"),
 								status: true,
 							});
-							input.codemirror.setSize(100, 500);
+							input.codemirror.setSize(1000, 50);
 							let output = new SimpleMDE({
 								element: document.getElementById("output"),
 								status: false,
 								toolbar: false,
 							});
-							output.codemirror.setSize(500, 450);
+							output.codemirror.setSize(1000, 450);
 							output.togglePreview();
 							output.codemirror.readOnly = true;
 							let username = "Unknown User";
