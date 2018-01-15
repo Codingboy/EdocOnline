@@ -602,6 +602,35 @@ function testSPBox()
 							let input = new SimpleMDE({
 								element: document.getElementById("input"),
 								status: true,
+								toolbar: [{
+										name: "bold",
+										action: SimpleMDE.toggleBold,
+										className: "fa fa-bold",
+										title: "Bold",
+									},{
+										name: "italic",
+										action: SimpleMDE.toggleItalic,
+										className: "fa fa-italic",
+										title: "Italic",
+									},{
+										name: "strikethrough",
+										action: SimpleMDE.toggleStrikethrough,
+										className: "fa fa-strikethrough",
+										title: "Strikethrough",
+									},{
+										name: "quote",
+										action: SimpleMDE.toggleBlockquote,
+										className: "fa fa-quote-left",
+										title: "Quote",
+									},{
+										name: "code",
+										action: SimpleMDE.toggleCodeBlock,
+										className: "fa fa-code",
+										title: "Code",
+									},
+									"|", // Separator
+									...
+								],
 							});
 							input.codemirror.setSize(1000, 50);
 							let output = new SimpleMDE({
