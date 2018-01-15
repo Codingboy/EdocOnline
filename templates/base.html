@@ -653,11 +653,6 @@ function testSPBox()
 										className: "fa fa-list-ol",
 										title: "Ordered List",
 									},"|",{
-										name: "clean-block",
-										action: SimpleMDE.cleanBlock,
-										className: "fa fa-eraser fa-clean-block",
-										title: "Clean Block",
-									},{
 										name: "link",
 										action: SimpleMDE.drawLink,
 										className: "fa fa-link",
@@ -673,11 +668,16 @@ function testSPBox()
 										className: "fa fa-table",
 										title: "Table",
 									},"|",{
+										name: "clean-block",
+										action: SimpleMDE.cleanBlock,
+										className: "fa fa-eraser fa-clean-block",
+										title: "Clean Block",
+									},{
 										name: "horizontal-rule",
 										action: SimpleMDE.drawHorizontalRule,
 										className: "fa fa-minus",
 										title: "Horizontal Rule",
-									},{
+									},"|",{
 										name: "preview",
 										action: SimpleMDE.togglePreview,
 										className: "fa fa-eye no-disable",
