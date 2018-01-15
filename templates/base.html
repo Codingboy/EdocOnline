@@ -616,9 +616,9 @@ function testSPBox()
 							let output = new SimpleMDE({
 								element: document.getElementById("output"),
 								status: false,
-								toolbar: false,
+								toolbar: true,
 							});
-							togglePreview(output);
+							//togglePreview(output);
 							let username = "Unknown User";
 							document.getElementById("username").value = username;
 							let sp = null;
