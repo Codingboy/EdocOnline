@@ -654,8 +654,7 @@ function testSPBox()
 									message = "**"+msToTime(millis)+" "+user+" (unencoded):** "+plainMessage+"\n";
 								}
 								output.value(output.value()+message);
-								output.togglePreview();
-								output.togglePreview();
+								output.codemirror.refresh();
 							});
 							socket.on("receiveMetaMessage", function(json)
 							{
@@ -689,8 +688,7 @@ function testSPBox()
 									message = "**"+msToTime(millis)+" "+user+" (meta):** disconnected\n";
 								}
 								output.value(output.value()+message);
-								output.togglePreview();
-								output.togglePreview();
+								output.codemirror.refresh();
 							});
 							let db = null;
 							initDB(function(event)
