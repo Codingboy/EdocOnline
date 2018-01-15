@@ -404,8 +404,10 @@ function testSBox()
 	}
 	let sBox = new SBox(pw);
 	let encoded = sBox.encode(plain);
+console.log(encoded);
 	sBox = new SBox(pw);
 	let decoded = sBox.decode(encoded);
+console.log(decoded);
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
 	{
