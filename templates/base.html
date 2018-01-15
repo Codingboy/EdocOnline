@@ -605,6 +605,11 @@ function testSPBox()
 								<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
 							</form>
 							<script>
+								let mde = new SimpleMDE({
+									element: document.getElementById("output"),
+									status: false,
+									toolbar: false,
+								});
 								let username = "Unknown User";
 								document.getElementById("username").value = username;
 								let sp = null;
@@ -640,7 +645,7 @@ function testSPBox()
 										let plainMessage = json["plainMessage"];
 										message = "**<"+msToTime(millis)+">["+user+"](unencoded):** "+plainMessage+"\n";
 									}
-									document.getElementById("output").value += message;
+									mde.value(mde.value()+message);
 								});
 								socket.on("receiveMetaMessage", function(json)
 								{
@@ -673,7 +678,7 @@ function testSPBox()
 									{
 										message = "**<"+msToTime(millis)+">["+user+"](meta):** disconnected\n";
 									}
-									document.getElementById("output").value += message;
+									mde.value(mde.value()+message);
 								});
 								let db = null;
 								initDB(function(event)
@@ -699,11 +704,6 @@ function testSPBox()
 									{
 										send();
 									}
-								});
-								new SimpleMDE({
-									element: document.getElementById("output"),
-									status: false,
-									toolbar: false,
 								});
 								testPBox();
 								testSPBox();
