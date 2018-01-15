@@ -636,7 +636,7 @@ function testSPBox()
 									else
 									{
 										let plainMessage = json["plainMessage"];
-										message = "<"+msToTime(millis)+">["+user+"] (unencoded) "+plainMessage+"\n";
+										message = "<"+msToTime(millis)+">["+user+"](unencoded) "+plainMessage+"\n";
 									}
 									document.getElementById("output").value += message;
 								});
@@ -644,31 +644,32 @@ function testSPBox()
 								{
 									console.log(json);
 									let user = json["user"];
+									let millis = json["time"];
 									message = "";
 									if ("oldUser" in json)
 									{
 										let oldUser = json["oldUser"];
-										message = "["+oldUser+"] renamed to ["+user+"]\n";
+										message = "<"+msToTime(millis)+">["+oldUser+"](meta) renamed to ["+user+"]\n";
 									}
 									if ("pw" in json)
 									{
 										let pw = json["pw"];
 										if (pw == 0)
 										{
-											message = "["+user+"] removed password\n";
+											message = "<"+msToTime(millis)+">["+user+"](meta) removed password\n";
 										}
 										if (pw == 1)
 										{
-											message = "["+user+"] changed password\n";
+											message = "<"+msToTime(millis)+">["+user+"](meta) changed password\n";
 										}
 									}
 									if ("connected" in json)
 									{
-										message = "["+user+"] connected\n";
+										message = "<"+msToTime(millis)+">["+user+"](meta) connected\n";
 									}
 									if ("disconnected" in json)
 									{
-										message = "["+user+"] disconnected\n";
+										message = "<"+msToTime(millis)+">["+user+"](meta) disconnected\n";
 									}
 									document.getElementById("output").value += message;
 								});

@@ -80,19 +80,23 @@ def handleSendMetaMessage(json):
 	logger.info(json)
 	if ("oldUser" in json):
 		session["user"] = json["user"]
+	millis = int(round(time.time() * 1000))
+	json["time"] = millis
 	emit("receiveMetaMessage", json, room=0)
 
 @socketio.on("connect")
 def handleConnect():
 	joinRoom(0)
-	emit("receiveMetaMessage", {"connected":True,"user":"Unknown User"}, room=0)
+	millis = int(round(time.time() * 1000))
+	emit("receiveMetaMessage", {"connected":True,"user":"Unknown User","time":millis}, room=0)
 	emit("createRooms", {"rooms":[0]}, room=0)
 
 @socketio.on("disconnect")
 def handleDisconnect():
 	room = session["room"]
 	leaveRoom(room)
-	emit("receiveMetaMessage", {"user":session["user"],"disconnected":True}, room=0)
+	millis = int(round(time.time() * 1000))
+	emit("receiveMetaMessage", {"user":session["user"],"disconnected":True,"time":millis}, room=0)
 
 @socketio.on_error_default
 def error_handler(e):
