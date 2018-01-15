@@ -44,11 +44,14 @@ function getRandomInt(min, max)
 }
 class SBox
 {
-	constructor(pw, seed)
+	/**
+	\pre Array.isArray(pw)
+	\pre pw.length == 256
+	*/
+	constructor(pw)
 	{
 		this.encodeMap = new Array(256);
 		this.decodeMap = new Array(256);
-		this.seed = seed;
 		for (let i=0; i<256; i++)
 		{
 			this.encodeMap[i] = -1;
@@ -80,36 +83,25 @@ class SBox
 	/**
 	\pre typeof(plain) == "string"
 	\pre plain.length == 1
-	\post this.seed changed
 	*/
 	encode(plain)
 	{
-		let index = (this.seed+plain)%256;
-		let encoded = this.encodeMap[index];
-//		this.seed = (this.seed+1)%256;
-		return encoded;
+		return this.encodeMap[plain];
 	}
 	/**
-	\pre typeof(plain) == "string"
-	\pre plain.length == 1
-	\post this.seed changed
+	\pre typeof(encoded) == "string"
+	\pre encoded.length == 1
 	*/
 	decode(encoded)
 	{
-		let decoded = this.decodeMap[encoded] - this.seed;
-		if (decoded < 0)
-		{
-			decoded += 256;
-		}
-//		this.seed = (this.seed+1)%256;
-		return decoded;
+		return this.decodeMap[encoded];
 	}
 }
 class PBox
 {
 	/**
 	\pre Array.isArray(pw)
-	\pre plain.length == 2048
+	\pre pw.length == 2048
 	*/
 	constructor(pw)
 	{
@@ -168,8 +160,8 @@ class PBox
 		return encoded;
 	}
 	/**
-	\pre Array.isArray(plain)
-	\pre plain.length == 256
+	\pre Array.isArray(encoded)
+	\pre encoded.length == 256
 	*/
 	decode(encoded)
 	{
@@ -192,34 +184,15 @@ class PBox
 		return decoded;
 	}
 }
-function testPBox()
-{
-	let pw = new Array(2048);
-	for (let i=0; i<pw.length; i++)
-	{
-		pw[i] = getRandomInt(0, 255);
-	}
-	let plain = new Array(256);
-	for (let i=0; i<plain.length; i++)
-	{
-		plain[i] = getRandomInt(0, 255);
-	}
-	let pBox = new PBox(pw);
-	let encoded = pBox.encode(plain);
-	pBox = new PBox(pw);
-	let decoded = pBox.decode(encoded);
-	let matches = 0;
-	for (let i=0; i<plain.length; i++)
-	{
-		if (plain[i] == decoded[i])
-		{
-			matches++;
-		}
-	}
-	console.log("p "+(matches==plain.length));
-}
 class SPBox
 {
+	/**
+	\pre Array.isArray(pw)
+	\pre pw.length == 4096
+	\pre Array.isArray(seed)
+	\pre seed.length == 256
+	\pre seed[i] != 0
+	*/
 	constructor(pw, seed)
 	{
 		this.sBoxes = new Array(8);
@@ -239,7 +212,7 @@ class SPBox
 			{
 				spw[i] = pw[s*256+i];
 			}
-			this.sBoxes[s] = new SBox(spw, 0);
+			this.sBoxes[s] = new SBox(spw);
 		}
 		let ppw = new Array(2048);
 		for (let i=0; i<2048; i++)
@@ -249,6 +222,10 @@ class SPBox
 		this.pBox = new PBox(ppw);
 		this.rounds = 8;
 	}
+	/**
+	\pre Array.isArray(plain)
+	\pre plain.length == 256
+	*/
 	encodeRound(plain)
 	{
 		let encoded = new Array(256);
@@ -267,6 +244,10 @@ class SPBox
 		encoded = this.pBox.encode(encoded);
 		return encoded;
 	}
+	/**
+	\pre Array.isArray(encoded)
+	\pre encoded.length == 256
+	*/
 	decodeRound(encoded)
 	{
 		let decoded = this.pBox.decode(encoded);
@@ -283,6 +264,11 @@ class SPBox
 		}
 		return decoded;
 	}
+	/**
+	\pre Array.isArray(plain)
+	\pre plain.length == 256
+	\post this.seed changed
+	*/
 	encodeRounds(plain)
 	{
 		let encoded = this.encodeRound(plain);
@@ -300,6 +286,11 @@ class SPBox
 		}
 		return encoded;
 	}
+	/**
+	\pre Array.isArray(encoded)
+	\pre encoded.length == 256
+	\post this.seed changed
+	*/
 	decodeRounds(encoded)
 	{
 		let decoded = this.decodeRound(encoded);
@@ -317,6 +308,11 @@ class SPBox
 		}
 		return decoded;
 	}
+	/**
+	\pre Array.isArray(plain)
+	\pre plain.length > 0
+	\post this.seed changed
+	*/
 	encode(plain)
 	{
 		let length = plain.length;
@@ -342,6 +338,12 @@ class SPBox
 		}
 		return {"length":length, "message":encoded};
 	}
+	/**
+	\pre Array.isArray(encodedJSON["message"])
+	\pre encodedJSON["message"].length >= encodedJSON["length"]
+	\pre encodedJSON["message"].length % 256 == 0
+	\post this.seed changed
+	*/
 	decode(encodedJSON)
 	{
 		let length = encodedJSON["length"];
@@ -388,6 +390,58 @@ class SPBox
 		}
 	}
 }
+function testSBox()
+{
+	let pw = new Array(256);
+	for (let i=0; i<pw.length; i++)
+	{
+		pw[i] = getRandomInt(0, 255);
+	}
+	let plain = new Array(256);
+	for (let i=0; i<plain.length; i++)
+	{
+		plain[i] = getRandomInt(0, 255);
+	}
+	let sBox = new SBox(pw);
+	let encoded = sBox.encode(plain);
+	sBox = new SBox(pw);
+	let decoded = sBox.decode(encoded);
+	let matches = 0;
+	for (let i=0; i<plain.length; i++)
+	{
+		if (plain[i] == decoded[i])
+		{
+			matches++;
+		}
+	}
+	console.log("p "+(matches==plain.length));
+}
+function testPBox()
+{
+	let pw = new Array(2048);
+	for (let i=0; i<pw.length; i++)
+	{
+		pw[i] = getRandomInt(0, 255);
+	}
+	let plain = new Array(256);
+	for (let i=0; i<plain.length; i++)
+	{
+		plain[i] = getRandomInt(0, 255);
+	}
+	let pBox = new PBox(pw);
+	let encoded = pBox.encode(plain);
+	pBox = new PBox(pw);
+	let decoded = pBox.decode(encoded);
+	let matches = 0;
+	for (let i=0; i<plain.length; i++)
+	{
+		if (plain[i] == decoded[i])
+		{
+			matches++;
+		}
+	}
+	console.log("p "+(matches==plain.length));
+}
 function testSPBox()
 {
 	let pw = new Array(4096);
@@ -400,7 +454,7 @@ function testSPBox()
 	{
 		seed[i] = getRandomInt(1, 255);
 	}
-	let plain = new Array(256);
+	let plain = new Array(512);
 	for (let i=0; i<plain.length; i++)
 	{
 		plain[i] = getRandomInt(0, 255);
@@ -806,6 +860,7 @@ function testSPBox()
 									send();
 								}
 							});
+							testSBox();
 							testPBox();
 							testSPBox();
 						</script>
