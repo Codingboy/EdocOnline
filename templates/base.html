@@ -29,10 +29,11 @@
 			#input
 			{
 				width: 75%;
+				height: 100px;
 			}
-			.CodeMirror
+			#output
 			{
-				height: 300px;
+				height: 450px;
 			}
 			.footer
 			{
@@ -427,8 +428,7 @@ function testSPBox()
 }
 			function send()
 			{
-				let input = document.getElementById("input");
-				if (input.value == "")
+				if (input.value() == "")
 				{
 					return;
 				}
@@ -437,11 +437,11 @@ function testSPBox()
 				if (sp === null)
 				{
 					json["encoded"] = false;
-					json["plainMessage"] = input.value;
+					json["plainMessage"] = input.value();
 				}
 				else
 				{
-					let message = input.value;
+					let message = input.value();
 					json["encoded"] = true;
 					let seed = new Array(256);
 					for (let i=0; i<256; i++)
@@ -458,7 +458,7 @@ function testSPBox()
 					let encodedMessage = sp.encode(plainMessage);
 					json["encodedMessage"] = encodedMessage;
 				}
-				input.value = "";
+				input.value("");
 				console.log(json);
 				socket.emit("sendMessage", json);
 			}
@@ -605,10 +605,15 @@ function testSPBox()
 							Password: <input type="password" name="password" id="password"><input type="button" value="Use Password" onclick="usePassword()"><br/>
 							Passwordfile: <input type="file" name="passwordfile" id="passwordfile"><input type="number" name="begin" id="begin" value="0" min="0"><input type="number" name="length" id="length" value="4096" min="1" max ="4096"><input type="button" value="Use Passwordfile" onclick="usePasswordFile()"><br/>
 							<textarea readonly rows="30" cols="126" id="output"></textarea><br/>
-							<input type="text" name="input" id="input"><input type="button" value="Send" onclick="send()">
+							<textarea type="text" rows="2" cols="126" name="input" id="input"></textarea><input type="button" value="Send" onclick="send()">
 						</form>
 						<script>
-							let mde = new SimpleMDE({
+							let input = new SimpleMDE({
+								element: document.getElementById("input"),
+								status: true,
+								toolbar: true,
+							});
+							let output = new SimpleMDE({
 								element: document.getElementById("output"),
 								status: false,
 								toolbar: false,
@@ -648,7 +653,7 @@ function testSPBox()
 									let plainMessage = json["plainMessage"];
 									message = "**"+msToTime(millis)+" "+user+" (unencoded):** "+plainMessage+"\n";
 								}
-								mde.value(mde.value()+message);
+								output.value(output.value()+message);
 							});
 							socket.on("receiveMetaMessage", function(json)
 							{
@@ -681,7 +686,7 @@ function testSPBox()
 								{
 									message = "**"+msToTime(millis)+" "+user+" (meta):** disconnected\n";
 								}
-								mde.value(mde.value()+message);
+								output.value(output.value()+message);
 							});
 							let db = null;
 							initDB(function(event)
