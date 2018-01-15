@@ -13,6 +13,8 @@
 		<link href="https://fonts.googleapis.com/css?family=Indie+Flower" rel="stylesheet">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
 		<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css">
 		<title>{% block title %}Edoc{% endblock title %}</title>
 		<style>
 			html
@@ -689,12 +691,20 @@ function testSPBox()
 										title: "Markdown Guide",
 									},
 								],
+								renderingConfig: {
+									singleLineBreaks: false,
+									codeSyntaxHighlighting: true,
+								},
 							});
 							input.codemirror.setSize(1000, 50);
 							let output = new SimpleMDE({
 								element: document.getElementById("output"),
 								status: false,
 								toolbar: false,
+								renderingConfig: {
+									singleLineBreaks: false,
+									codeSyntaxHighlighting: true,
+								},
 							});
 							output.codemirror.setSize(1000, 450);
 							output.togglePreview();
