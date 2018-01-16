@@ -345,7 +345,7 @@ class SPBox
 	}
 	/**
 	\brief Decodes a container.
-	\param[in] encodedJSON {"length":length, "message":encodedNumbers}
+	\param[in] encodedJSON encoded container {"length":length, "message":encodedNumbers}
 	\pre Array.isArray(encodedJSON["message"])
 	\pre encodedJSON["message"].length >= encodedJSON["length"]
 	\pre encodedJSON["message"].length % 256 == 0
@@ -443,6 +443,61 @@ class SPBox
 	}
 }
 /**
+\brief Userfriendly interface for everyday uses.
+*/
+class Edoc
+{
+	/**
+	\param[in] pw password
+	\pre typeof(pw) == "string"
+	\pre pw.length is recommended to be 4096
+	*/
+	constructor(pw)
+	{
+		let asInt = [];
+		for (let i=0; i<pw.length; i++)
+		{
+			asInt.push(pw.charCodeAt(i));
+		}
+		let pwIndex = 0;
+		while (asInt.length < 4096)
+		{
+			asInt.push(pw.charCodeAt(pwIndex%pw.length));
+			pwIndex++;
+		}
+		this.spBox = new SPBox(asInt);
+	}
+	/**
+	\brief Encodes a plain string.
+	\param[in] plain plain string
+	\pre typeof(plain) == "string"
+	\pre plain.length > 0
+	\return container: {"seed":seed,"message":encodedMessage}
+	*/
+	encode(plain)
+	{
+		let seed = new Array(256);
+		for (let i=0; i<256; i++)
+		{
+			seed[i] = getRandomInt(1, 255);
+		}
+		this.spBox.setSeed(seed);
+		return {"seed":seed,"message":this.spBox.encodeString(plain)};
+	}
+	/**
+	\brief Decodes an encoded container.
+	\param[in] encoded encoded container {"seed":seed,"message":encodedMessage}
+	\return decoded string
+	*/
+	decode(container)
+	{
+		let seed = container["seed"];
+		let encoded = container["message"];
+		this.spBox.setSeed(seed);
+		return this.spBox.decodeString(encoded);
+	}
+}
+/**
 \brief Tests the SBox.
 */
 function testSBox()
@@ -463,7 +518,6 @@ function testSBox()
 	{
 		encoded[i] = sBox.encode(plain[i]);
 	}
-	sBox = new SBox(pw);
 	let decoded = new Array(encoded.length);
 	for (let i=encoded.length-1; i>=0; i--)
 	{
@@ -496,7 +550,6 @@ function testPBox()
 	}
 	let pBox = new PBox(pw);
 	let encoded = pBox.encode(plain);
-	pBox = new PBox(pw);
 	let decoded = pBox.decode(encoded);
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
@@ -530,7 +583,7 @@ function testSPBox()
 	}
 	let spBox = new SPBox(pw, seed);
 	let encoded = spBox.encode(plain);
-	spBox = new SPBox(pw, seed);
+	spBox.setSeed(seed);
 	let decoded = spBox.decode(encoded);
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
@@ -541,4 +594,16 @@ function testSPBox()
 		}
 	}
 	console.log("sp "+(matches == plain.length));
+}
+/**
+\brief Tests the Edoc.
+*/
+function testEdoc()
+{
+	let pw = "BlaBlub42";
+	let plain = "Hello World! This is me!";
+	let edoc = new Edoc(pw);
+	let encoded = edoc.encode(plain);
+	let decoded = edoc.decode(encoded);
+	console.log("edoc "+(plain == decoded));
 }
