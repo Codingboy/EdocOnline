@@ -223,7 +223,7 @@ class SPBox
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
-			encoded[i] = plain[i] ^ this.sBoxes[round].encodeMap[i];
+			encoded[i] = plain[i] ^ this.sBoxes[0].encodeMap[i];
 			for (let j=0; j<8; j++)
 			{
 				if ((this.seed[i] & (1<<j)) != 0)
@@ -253,7 +253,7 @@ class SPBox
 				if ((this.seed[i] & (1<<j)) != 0)
 				{
 					let sBox = this.sBoxes[j];
-					decoded[i] = sBox.decode(decoded[i]) ^ this.sBoxes[round].encodeMap[i];
+					decoded[i] = sBox.decode(decoded[i]) ^ this.sBoxes[0].encodeMap[i];
 				}
 			}
 		}
