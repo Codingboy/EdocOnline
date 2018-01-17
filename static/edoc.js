@@ -253,9 +253,10 @@ class SPBox
 				if ((this.seed[i] & (1<<j)) != 0)
 				{
 					let sBox = this.sBoxes[j];
-					decoded[i] = sBox.decode(decoded[i]) ^ this.sBoxes[0].encodeMap[i];
+					decoded[i] = sBox.decode(decoded[i]);
 				}
 			}
+			decoded[i] = decoded[i] ^ this.sBoxes[0].encodeMap[i];
 		}
 		return decoded;
 	}
