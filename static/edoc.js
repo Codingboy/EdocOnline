@@ -210,7 +210,6 @@ class SPBox
 			ppw[i] = pw[8*256+i];
 		}
 		this.pBox = new PBox(ppw);
-		this.rounds = 8;
 	}
 	/**
 	\brief Encodes a block of plain numbers.
@@ -219,12 +218,12 @@ class SPBox
 	\pre plain.length == 256
 	\return block of encoded numbers
 	*/
-	encodeRound(plain)
+	encodeRound(plain, round)
 	{
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
-			encoded[i] = plain[i];
+			encoded[i] = plain[i] ^ this.sBoxes[round].encodeMap[i];
 			for (let j=0; j<8; j++)
 			{
 				if ((this.seed[i] & (1<<j)) != 0)
@@ -244,7 +243,7 @@ class SPBox
 	\pre encoded.length == 256
 	\return block of decoded numbers
 	*/
-	decodeRound(encoded)
+	decodeRound(encoded, round)
 	{
 		let decoded = this.pBox.decode(encoded);
 		for (let i=0; i<256; i++)
@@ -254,7 +253,7 @@ class SPBox
 				if ((this.seed[i] & (1<<j)) != 0)
 				{
 					let sBox = this.sBoxes[j];
-					decoded[i] = sBox.decode(decoded[i]);
+					decoded[i] = sBox.decode(decoded[i]) ^ this.sBoxes[round].encodeMap[i];
 				}
 			}
 		}
@@ -270,10 +269,10 @@ class SPBox
 	*/
 	encodeRounds(plain)
 	{
-		let encoded = this.encodeRound(plain);
-		for (let i=0; i<this.rounds-1; i++)
+		let encoded = this.encodeRound(plain, 0);
+		for (let i=1; i<8; i++)
 		{
-			encoded = this.encodeRound(encoded);
+			encoded = this.encodeRound(encoded, i);
 		}
 		for (let i=0; i<256; i++)
 		{
@@ -295,10 +294,10 @@ class SPBox
 	*/
 	decodeRounds(encoded)
 	{
-		let decoded = this.decodeRound(encoded);
-		for (let i=0; i<this.rounds-1; i++)
+		let decoded = this.decodeRound(encoded, 7);
+		for (let i=6; i>=0; i--)
 		{
-			decoded = this.decodeRound(decoded);
+			decoded = this.decodeRound(decoded, i);
 		}
 		for (let i=0; i<256; i++)
 		{
