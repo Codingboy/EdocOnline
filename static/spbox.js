@@ -382,42 +382,6 @@ class SPBox
 		return decoded;
 	}
 	/**
-	\brief Encodes a plain string.
-	\param[in] plain plain string
-	\pre typeof(plain) == "string"
-	\pre plain.length > 0
-	\post this.seed changed
-	\return block of encoded numbers
-	*/
-	encodeString(plain)
-	{
-		let plainMessage = new Array(plain.length);
-		for (let i=0; i<plain.length; i++)
-		{
-			plainMessage[i] = plain.charCodeAt(i);
-		}
-		return this.encode(plainMessage);
-	}
-	/**
-	\brief Decodes a block of encoded numbers.
-	\param[in] encoded block of encoded numbers
-	\pre Array.isArray(encoded)
-	\pre encoded.length >= 256
-	\pre encoded.length % 256 == 0
-	\post this.seed changed
-	\return decoded string
-	*/
-	decodeString(encoded)
-	{
-		let decoded = this.decode(encoded);
-		let decodedStr = "";
-		for (let i=0; i<decoded.length; i++)
-		{
-			decodedStr += String.fromCharCode(decoded[i]);
-		}
-		return decodedStr;
-	}
-	/**
 	\brief Gets the seed.
 	\return block of seed numbers
 	*/
@@ -472,6 +436,42 @@ class Edoc
 	\param[in] plain plain string
 	\pre typeof(plain) == "string"
 	\pre plain.length > 0
+	\post this.seed changed
+	\return block of encoded numbers
+	*/
+	encodeString(plain)
+	{
+		let plainMessage = new Array(plain.length);
+		for (let i=0; i<plain.length; i++)
+		{
+			plainMessage[i] = plain.charCodeAt(i);
+		}
+		return this.spBox.encode(plainMessage);
+	}
+	/**
+	\brief Decodes a block of encoded numbers.
+	\param[in] encoded block of encoded numbers
+	\pre Array.isArray(encoded)
+	\pre encoded.length >= 256
+	\pre encoded.length % 256 == 0
+	\post this.seed changed
+	\return decoded string
+	*/
+	decodeString(encoded)
+	{
+		let decoded = this.spBox.decode(encoded);
+		let decodedStr = "";
+		for (let i=0; i<decoded.length; i++)
+		{
+			decodedStr += String.fromCharCode(decoded[i]);
+		}
+		return decodedStr;
+	}
+	/**
+	\brief Encodes a plain string.
+	\param[in] plain plain string
+	\pre typeof(plain) == "string"
+	\pre plain.length > 0
 	\return container: {"seed":seed,"message":encodedMessage}
 	*/
 	encode(plain)
@@ -482,7 +482,7 @@ class Edoc
 			seed[i] = getRandomInt(1, 255);
 		}
 		this.spBox.setSeed(seed);
-		return {"seed":seed,"message":this.spBox.encodeString(plain)};
+		return {"seed":seed,"message":this.encodeString(plain)};
 	}
 	/**
 	\brief Decodes an encoded container.
@@ -494,7 +494,7 @@ class Edoc
 		let seed = container["seed"];
 		let encoded = container["message"];
 		this.spBox.setSeed(seed);
-		return this.spBox.decodeString(encoded);
+		return this.decodeString(encoded);
 	}
 }
 /**
