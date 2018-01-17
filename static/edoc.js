@@ -225,6 +225,7 @@ class SPBox
 		{
 			encoded[i] = plain[i];
 			encoded[i] = encoded[i] ^ this.sBoxes[round].encodeMap[i];
+			encoded[i] = encoded[i] ^ this.seed[i];
 			for (let j=0; j<8; j++)
 			{
 				if ((this.seed[i] & (1<<j)) != 0)
@@ -258,6 +259,7 @@ class SPBox
 				}
 			}
 			decoded[i] = decoded[i] ^ this.sBoxes[round].encodeMap[i];
+			decoded[i] = decoded[i] ^ this.seed[i];
 		}
 		return decoded;
 	}
