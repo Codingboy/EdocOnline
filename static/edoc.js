@@ -117,11 +117,12 @@ class PBox
 	/**
 	\brief Encodes a block of plain numbers.
 	\param[in] plain block of plain numbers
+	\param[in] seed seed
 	\pre Array.isArray(plain)
 	\pre plain.length == 256
 	\return block of encoded numbers
 	*/
-	encode(plain)
+	encode(plain, seed)
 	{
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
@@ -132,7 +133,7 @@ class PBox
 		{
 			for (let b=0; b<8; b++)
 			{
-				let index = this.encodeMap[i*8+b];
+				let index = this.encodeMap[(i*8+b+seed)%2048];
 				if ((plain[i]) & (1<<b))
 				{
 					encoded[parseInt(index/8)] = encoded[parseInt(index/8)] + (1<<(index%8));
@@ -144,11 +145,12 @@ class PBox
 	/**
 	\brief Decodes a block of encoded numbers.
 	\param[in] encoded block of encoded numbers
+	\param[in] seed seed
 	\pre Array.isArray(encoded)
 	\pre encoded.length == 256
 	\return block of decoded numbers
 	*/
-	decode(encoded)
+	decode(encoded, seed)
 	{
 		let decoded = new Array(256);
 		for (let i=0; i<256; i++)
@@ -159,7 +161,11 @@ class PBox
 		{
 			for (let b=0; b<8; b++)
 			{
-				let index = this.decodeMap[i*8+b];
+				let index = this.decodeMap[i*8+b] - seed;
+				if (index < 0)
+				{
+					index += 2048;
+				}
 				if ((encoded[i]) & (1<<b))
 				{
 					decoded[parseInt(index/8)] = decoded[parseInt(index/8)] + (1<<(index%8));
@@ -214,11 +220,12 @@ class SPBox
 	/**
 	\brief Encodes a block of plain numbers.
 	\param[in] plain block of plain numbers
+	\param[in] pSeed seed for PBox
 	\pre Array.isArray(plain)
 	\pre plain.length == 256
 	\return block of encoded numbers
 	*/
-	encodeRound(plain, round)
+	encodeRound(plain, round, pSeed)
 	{
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
@@ -235,19 +242,20 @@ class SPBox
 				}
 			}
 		}
-		encoded = this.pBox.encode(encoded);
+		encoded = this.pBox.encode(encoded, pSeed);
 		return encoded;
 	}
 	/**
 	\brief Decodes a block of encoded numbers.
 	\param[in] encoded block of encoded numbers
+	\param[in] pSeed seed for PBox
 	\pre Array.isArray(encoded)
 	\pre encoded.length == 256
 	\return block of decoded numbers
 	*/
-	decodeRound(encoded, round)
+	decodeRound(encoded, round, pSeed)
 	{
-		let decoded = this.pBox.decode(encoded);
+		let decoded = this.pBox.decode(encoded, pSeed);
 		for (let i=0; i<256; i++)
 		{
 			for (let j=8-1; j>=0; j--)
@@ -273,10 +281,15 @@ class SPBox
 	*/
 	encodeRounds(plain)
 	{
-		let encoded = this.encodeRound(plain, 0);
+		let pSeed = 0;
+		for (let i=0; i<256; i++)
+		{
+			pSeed = (pSeed+this.seed[i])%256;
+		}
+		let encoded = this.encodeRound(plain, 0, pSeed);
 		for (let i=1; i<8; i++)
 		{
-			encoded = this.encodeRound(encoded, i);
+			encoded = this.encodeRound(encoded, i, pSeed);
 		}
 		for (let i=0; i<256; i++)
 		{
@@ -298,10 +311,15 @@ class SPBox
 	*/
 	decodeRounds(encoded)
 	{
-		let decoded = this.decodeRound(encoded, 7);
+		let pSeed = 0;
+		for (let i=0; i<256; i++)
+		{
+			pSeed = (pSeed+this.seed[i])%256;
+		}
+		let decoded = this.decodeRound(encoded, 7, pSeed);
 		for (let i=6; i>=0; i--)
 		{
-			decoded = this.decodeRound(decoded, i);
+			decoded = this.decodeRound(decoded, i, pSeed);
 		}
 		for (let i=0; i<256; i++)
 		{
