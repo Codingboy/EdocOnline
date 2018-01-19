@@ -639,7 +639,7 @@ function testEdoc()
 	let pw = "asd";
 	let plain = "";
 	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	for (var i = 0; i < 5; i++)
+	for (var i = 0; i < 15000; i++)
 	{
 		plain += possible.charAt(Math.floor(Math.random() * possible.length));
 	}
