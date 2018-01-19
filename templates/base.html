@@ -329,11 +329,7 @@
 										let encodedMessage = json["encodedMessage"];
 										let decodedMessage = edoc.decode(encodedMessage);
 										message = "**"+msToTime(millis)+" "+user+":** ";
-										for (let i=0; i<decodedMessage.length; i++)
-										{
-											message += String.fromCharCode(decodedMessage[i]);
-										}
-										message += "\n";
+										message += decodedMessage+"\n";
 									}
 								}
 								else
