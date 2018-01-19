@@ -161,7 +161,11 @@ class PBox
 		{
 			for (let b=0; b<8; b++)
 			{
-				let index = this.decodeMap[(i*8+b+seed)%2048];
+				let index = this.decodeMap[i*8+b] - seed;
+				if (index < 0)
+				{
+					index += 2048;
+				}
 				if ((encoded[i]) & (1<<b))
 				{
 					decoded[parseInt(index/8)] = decoded[parseInt(index/8)] + (1<<(index%8));
@@ -566,8 +570,8 @@ function testPBox()
 		plain[i] = getRandomInt(0, 255);
 	}
 	let pBox = new PBox(pw);
-	let encoded = pBox.encode(plain);
-	let decoded = pBox.decode(encoded);
+	let encoded = pBox.encode(plain, 0);
+	let decoded = pBox.decode(encoded, 0);
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
 	{
