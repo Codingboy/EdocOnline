@@ -630,4 +630,7 @@ function testEdoc()
 	let encoded = edoc.encode(plain);
 	let decoded = edoc.decode(encoded);
 	console.log("edoc "+(plain == decoded));
+	console.log(plain);
+	console.log(encoded);
+	console.log(decoded);
 }
