@@ -134,7 +134,6 @@ class PBox
 			for (let b=0; b<8; b++)
 			{
 				let index = this.encodeMap[(i*8+b+seed)%2048];
-index = this.encodeMap[(i*8+b)%2048];
 				if ((plain[i]) & (1<<b))
 				{
 					encoded[parseInt(index/8)] = encoded[parseInt(index/8)] + (1<<(index%8));
@@ -163,7 +162,6 @@ index = this.encodeMap[(i*8+b)%2048];
 			for (let b=0; b<8; b++)
 			{
 				let index = this.decodeMap[i*8+b] - seed;
-index = this.decodeMap[i*8+b];
 				if (index < 0)
 				{
 					index += 2048;
@@ -178,7 +176,7 @@ index = this.decodeMap[i*8+b];
 	}
 }
 /**
-\brief SPBox is a substitution–permutation network.
+\brief SPBox is a substitution-permutation network.
 */
 class SPBox
 {
@@ -469,9 +467,13 @@ class Edoc
 		{
 			if (plain.charCodeAt(i) > 255)
 			{
-				console.log(plain.charCodeAt(i));
+				plainMessage[i] = "?".charCodeAt(0);
+				console.log(plain.charCodeAt(i)+" is no valid char");
 			}
-			plainMessage[i] = plain.charCodeAt(i);
+			else
+			{
+				plainMessage[i] = plain.charCodeAt(i);
+			}
 		}
 		return this.spBox.encode(plainMessage);
 	}
