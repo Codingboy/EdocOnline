@@ -258,6 +258,7 @@ class SPBox
 	decodeRound(encoded, round, pSeed)
 	{
 		let decoded = this.pBox.decode(encoded, pSeed);
+decoded = encoded.splice();
 		for (let i=0; i<256; i++)
 		{
 			for (let j=8-1; j>=0; j--)
