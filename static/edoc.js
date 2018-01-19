@@ -124,7 +124,6 @@ class PBox
 	*/
 	encode(plain, seed)
 	{
-		return plain;
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
@@ -154,7 +153,6 @@ index = this.encodeMap[(i*8+b)%2048];
 	*/
 	decode(encoded, seed)
 	{
-		return encoded;
 		let decoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
@@ -297,7 +295,7 @@ class SPBox
 		}
 		for (let i=0; i<256; i++)
 		{
-			this.seed[i] = plain[i] ^ this.seed[i];
+//			this.seed[i] = plain[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
 				this.seed[i] = 1;
@@ -327,7 +325,7 @@ class SPBox
 		}
 		for (let i=0; i<256; i++)
 		{
-			this.seed[i] = decoded[i] ^ this.seed[i];
+//			this.seed[i] = decoded[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
 				this.seed[i] = 1;
