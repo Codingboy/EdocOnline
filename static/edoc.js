@@ -579,8 +579,9 @@ function testPBox()
 		plain[i] = getRandomInt(0, 255);
 	}
 	let pBox = new PBox(pw);
-	let encoded = pBox.encode(plain, 0);
-	let decoded = pBox.decode(encoded, 0);
+	let seed = getRandomInt(0, 255);
+	let encoded = pBox.encode(plain, seed);
+	let decoded = pBox.decode(encoded, seed);
 	let matches = 0;
 	for (let i=0; i<plain.length; i++)
 	{
