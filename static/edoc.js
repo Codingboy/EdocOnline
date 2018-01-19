@@ -467,6 +467,10 @@ class Edoc
 		let plainMessage = new Array(plain.length);
 		for (let i=0; i<plain.length; i++)
 		{
+			if (plain.charCodeAt(i) > 255)
+			{
+				console.log(plain.charCodeAt(i));
+			}
 			plainMessage[i] = plain.charCodeAt(i);
 		}
 		return this.spBox.encode(plainMessage);
