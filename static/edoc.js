@@ -298,10 +298,10 @@ pSeed = 0;
 		}
 		for (let i=0; i<256; i++)
 		{
-			this.seed[i] = plain[i] ^ this.seed[i];
+//			this.seed[i] = plain[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
-				this.seed[i] = 1;
+//				this.seed[i] = 1;
 			}
 		}
 		return encoded;
@@ -328,10 +328,10 @@ pSeed = 0;
 		}
 		for (let i=0; i<256; i++)
 		{
-			this.seed[i] = decoded[i] ^ this.seed[i];
+//			this.seed[i] = decoded[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
-				this.seed[i] = 1;
+//				this.seed[i] = 1;
 			}
 		}
 		return decoded;
