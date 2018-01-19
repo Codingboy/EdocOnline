@@ -628,26 +628,17 @@ function testSPBox()
 /**
 \brief Tests the Edoc.
 */
-/*function testEdoc()
-{
-	let pw = "BlaBlub42";
-	let plain = "Hello World! This is me!";
-	let edoc = new Edoc(pw);
-	let encoded = edoc.encode(plain);
-	let decoded = edoc.decode(encoded);
-	console.log("edoc "+(plain == decoded));
-	console.log(plain);
-	console.log(encoded);
-	console.log(decoded);
-}*/
 function testEdoc()
 {
-	let pw = "asd";
-	let plain = "";
-	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	for (var i = 0; i < 15000; i++)
+	let pw = "";
+	for (let i=0; i<getRandomInt(1, 4096); i++)
 	{
-		plain += possible.charAt(Math.floor(Math.random() * possible.length));
+		pw += String.fromCharCode(getRandomInt(0, 255));
+	}
+	let plain = "";
+	for (let i=0; i<10000; i++)
+	{
+		plain += String.fromCharCode(getRandomInt(0, 255));
 	}
 	let edoc = new Edoc(pw);
 	let encoded = edoc.encode(plain);
