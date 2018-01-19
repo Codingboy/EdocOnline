@@ -48,7 +48,7 @@
 				}
 				let json = {};
 				json["username"] = username;
-				if (sp === null)
+				if (edoc === null)
 				{
 					json["encoded"] = false;
 					json["plainMessage"] = input.value();
@@ -57,19 +57,7 @@
 				{
 					let message = input.value();
 					json["encoded"] = true;
-					let seed = new Array(256);
-					for (let i=0; i<256; i++)
-					{
-						seed[i] = getRandomInt(1, 255);
-					}
-					sp.setSeed(seed);
-					json["seed"] = sp.getSeed();
-					let plainMessage = [];
-					for (let i=0; i<message.length; i++)
-					{
-						plainMessage.push(message.charCodeAt(i));
-					}
-					let encodedMessage = sp.encode(plainMessage);
+					let encodedMessage = edoc.encode(message);
 					json["encodedMessage"] = encodedMessage;
 				}
 				input.value("");
@@ -81,7 +69,7 @@
 				let password = document.getElementById("password").value;
 				if (password == "")
 				{
-					sp = null;
+					edoc = null;
 					socket.emit("sendMetaMessage", {"user":username,"pw":0});
 				}
 				else
@@ -106,18 +94,7 @@
 			function updatePassword(pw)
 			{
 				socket.emit("sendMetaMessage", {"user":username,"pw":1});
-				let asInt = [];
-				for (let i=0; i<pw.length; i++)
-				{
-					asInt.push(pw.charCodeAt(i));
-				}
-				let pwIndex = 0;
-				while (asInt.length < 4096)
-				{
-					asInt.push(pw.charCodeAt(pwIndex%pw.length));
-					pwIndex++;
-				}
-				sp = new SPBox(asInt);
+				edoc = new Edoc(pw);
 			}
 			function useUsername()
 			{
@@ -333,7 +310,7 @@
 							output.codemirror.readOnly = true;
 							let username = "Unknown User";
 							document.getElementById("username").value = username;
-							let sp = null;
+							let edoc = null;
 							let passwordFileContent = "";
 							document.getElementById("passwordfile").addEventListener("change", readSingleFile, false);
 							let socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
@@ -347,12 +324,10 @@
 								let millis = json["time"];
 								if (encoded)
 								{
-									if (sp)
+									if (edoc)
 									{
-										let seed = json["seed"];
-										sp.setSeed(seed);
 										let encodedMessage = json["encodedMessage"];
-										let decodedMessage = sp.decode(encodedMessage);
+										let decodedMessage = edoc.decode(encodedMessage);
 										message = "**"+msToTime(millis)+" "+user+":** ";
 										for (let i=0; i<decodedMessage.length; i++)
 										{
