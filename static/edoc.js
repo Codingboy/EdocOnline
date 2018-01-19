@@ -134,6 +134,7 @@ class PBox
 			for (let b=0; b<8; b++)
 			{
 				let index = this.encodeMap[(i*8+b+seed)%2048];
+index = this.encodeMap[(i*8+b)%2048];
 				if ((plain[i]) & (1<<b))
 				{
 					encoded[parseInt(index/8)] = encoded[parseInt(index/8)] + (1<<(index%8));
@@ -162,6 +163,7 @@ class PBox
 			for (let b=0; b<8; b++)
 			{
 				let index = this.decodeMap[i*8+b] - seed;
+index = this.decodeMap[i*8+b];
 				if (index < 0)
 				{
 					index += 2048;
@@ -200,10 +202,6 @@ class SPBox
 				seed[i] = getRandomInt(1, 255);
 			}
 		}
-for (let i=0; i<256; i++)
-{
-	seed[i] = 0;
-}
 		this.seed = seed.slice();
 		for (let s=0; s<8; s++)
 		{
@@ -290,7 +288,6 @@ for (let i=0; i<256; i++)
 		{
 			pSeed = (pSeed+this.seed[i])%256;
 		}
-pSeed = 0;
 		let encoded = this.encodeRound(plain, 0, pSeed);
 		for (let i=1; i<8; i++)
 		{
@@ -298,10 +295,10 @@ pSeed = 0;
 		}
 		for (let i=0; i<256; i++)
 		{
-//			this.seed[i] = plain[i] ^ this.seed[i];
+			this.seed[i] = plain[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
-//				this.seed[i] = 1;
+				this.seed[i] = 1;
 			}
 		}
 		return encoded;
@@ -328,10 +325,10 @@ pSeed = 0;
 		}
 		for (let i=0; i<256; i++)
 		{
-//			this.seed[i] = decoded[i] ^ this.seed[i];
+			this.seed[i] = decoded[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
-//				this.seed[i] = 1;
+				this.seed[i] = 1;
 			}
 		}
 		return decoded;
@@ -430,10 +427,6 @@ pSeed = 0;
 		{
 			this.seed[i] = seed[i];
 		}
-for (let i=0; i<256; i++)
-{
-	seed[i] = 0;
-}
 	}
 }
 /**
