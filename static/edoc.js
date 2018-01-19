@@ -198,9 +198,12 @@ class SPBox
 			for (let i=0; i<256; i++)
 			{
 				seed[i] = getRandomInt(1, 255);
-seed[i] = 0;
 			}
 		}
+for (let i=0; i<256; i++)
+{
+	seed[i] = 0;
+}
 		this.seed = seed.slice();
 		for (let s=0; s<8; s++)
 		{
@@ -427,6 +430,10 @@ pSeed = 0;
 		{
 			this.seed[i] = seed[i];
 		}
+for (let i=0; i<256; i++)
+{
+	seed[i] = 0;
+}
 	}
 }
 /**
