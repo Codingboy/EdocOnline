@@ -622,7 +622,7 @@ function testSPBox()
 /**
 \brief Tests the Edoc.
 */
-function testEdoc()
+/*function testEdoc()
 {
 	let pw = "BlaBlub42";
 	let plain = "Hello World! This is me!";
@@ -633,4 +633,18 @@ function testEdoc()
 	console.log(plain);
 	console.log(encoded);
 	console.log(decoded);
+}*/
+function testEdoc()
+{
+	let pw = "asd";
+	let plain = "";
+	var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	for (var i = 0; i < 5; i++)
+	{
+		plain += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+	let edoc = new Edoc(pw);
+	let encoded = edoc.encode(plain);
+	let decoded = edoc.decode(encoded);
+	console.log("edoc "+(plain == decoded));
 }
