@@ -295,7 +295,7 @@ class SPBox
 		}
 		for (let i=0; i<256; i++)
 		{
-//			this.seed[i] = plain[i] ^ this.seed[i];
+			this.seed[i] = plain[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
 				this.seed[i] = 1;
@@ -325,7 +325,7 @@ class SPBox
 		}
 		for (let i=0; i<256; i++)
 		{
-//			this.seed[i] = decoded[i] ^ this.seed[i];
+			this.seed[i] = decoded[i] ^ this.seed[i];
 			if (this.seed[i] == 0)
 			{
 				this.seed[i] = 1;
