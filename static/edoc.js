@@ -234,14 +234,14 @@ class SPBox
 		{
 			encoded[i] = plain[i];
 			encoded[i] = encoded[i] ^ this.sBoxes[round].encodeMap[i];
-//			encoded[i] = encoded[i] ^ this.seed[i];
+			encoded[i] = encoded[i] ^ this.seed[i];
 			for (let j=0; j<8; j++)
 			{
-//				if ((this.seed[i] & (1<<j)) != 0)
-//				{
+				if ((this.seed[i] & (1<<j)) != 0)
+				{
 					let sBox = this.sBoxes[j];
 					encoded[i] = sBox.encode(encoded[i]);
-//				}
+				}
 			}
 		}
 		encoded = this.pBox.encode(encoded, pSeed);
@@ -262,14 +262,14 @@ class SPBox
 		{
 			for (let j=8-1; j>=0; j--)
 			{
-//				if ((this.seed[i] & (1<<j)) != 0)
-//				{
+				if ((this.seed[i] & (1<<j)) != 0)
+				{
 					let sBox = this.sBoxes[j];
 					decoded[i] = sBox.decode(decoded[i]);
-//				}
+				}
 			}
 			decoded[i] = decoded[i] ^ this.sBoxes[round].encodeMap[i];
-//			decoded[i] = decoded[i] ^ this.seed[i];
+			decoded[i] = decoded[i] ^ this.seed[i];
 		}
 		return decoded;
 	}
