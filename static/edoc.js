@@ -124,6 +124,7 @@ class PBox
 	*/
 	encode(plain, seed)
 	{
+		return plain;
 		let encoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
@@ -153,6 +154,7 @@ index = this.encodeMap[(i*8+b)%2048];
 	*/
 	decode(encoded, seed)
 	{
+		return encoded;
 		let decoded = new Array(256);
 		for (let i=0; i<256; i++)
 		{
@@ -258,7 +260,6 @@ class SPBox
 	decodeRound(encoded, round, pSeed)
 	{
 		let decoded = this.pBox.decode(encoded, pSeed);
-decoded = encoded.splice();
 		for (let i=0; i<256; i++)
 		{
 			for (let j=8-1; j>=0; j--)
