@@ -69,47 +69,39 @@ def testVoice():
 	<html>\
 	<head>\
 		<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>\
-		<script>\
-			$(function () {\
-				try\
-				{\
-					var recognition = new webkitSpeechRecognition();\
-				}\
-				catch (e)\
-				{\
-					var recognition = Object;\
-				}\
-				recognition.continuous = true;\
-				recognition.interimResults = true;\
-				recognition.onresult = function (event)\
-				{\
-					console.log('result');\
-					var txtRec = '';\
-					for (var i=event.resultIndex; i<event.results.length; ++i)\
-					{\
-						txtRec += event.results[i][0].transcript;\
-					}\
-					$('#txtArea').val(txtRec);\
-				};\
-				recognition.onerror = function (event)\
-				{\
-					console.log(event.error);\
-				};\
-				$('#startRecognition').click(function ()\
-				{\
-					console.log('start');\
-					$('#txtArea').focus();\
-					recognition.start();\
-				});\
-				$('#stopRecognition').click(function ()\
-				{\
-					console.log('stop');\
-					recognition.stop();\
-				});\
-			});\
-		</script>\
 	</head>\
 	<body>\
+		<script>\
+			var recognition = new webkitSpeechRecognition();\
+			recognition.continuous = true;\
+			recognition.lang = 'en-GB'\
+			recognition.interimResults = true;\
+			recognition.onresult = function (event)\
+			{\
+				console.log('result');\
+				var txtRec = '';\
+				for (var i=event.resultIndex; i<event.results.length; ++i)\
+				{\
+					txtRec += event.results[i][0].transcript;\
+				}\
+				$('#txtArea').val(txtRec);\
+			};\
+			recognition.onerror = function (event)\
+			{\
+				console.log(event.error);\
+			};\
+			$('#startRecognition').click(function ()\
+			{\
+				console.log('start');\
+				$('#txtArea').focus();\
+				recognition.start();\
+			});\
+			$('#stopRecognition').click(function ()\
+			{\
+				console.log('stop');\
+				recognition.stop();\
+			});\
+		</script>\
 		<button id='startRecognition'>Start Recognition</button>\
 		<button id='stopRecognition'>Stop Recognition</button>\
 		<textarea id='txtArea'></textarea>\
