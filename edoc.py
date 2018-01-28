@@ -69,6 +69,19 @@ def testVoice():
 	<html>\
 	<head>\
 		<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>\
+		<script>\
+			function startVoice()\
+			{\
+				console.log('start');\
+				$('#txtArea').focus();\
+				recognition.start();\
+			}\
+			function stopVoice()\
+			{\
+				console.log('stop');\
+				recognition.stop();\
+			}\
+		</script>\
 	</head>\
 	<body>\
 		<script>\
@@ -90,20 +103,9 @@ def testVoice():
 			{\
 				console.log(event.error);\
 			};\
-			$('#startRecognition').click(function ()\
-			{\
-				console.log('start');\
-				$('#txtArea').focus();\
-				recognition.start();\
-			});\
-			$('#stopRecognition').click(function ()\
-			{\
-				console.log('stop');\
-				recognition.stop();\
-			});\
 		</script>\
-		<button id='startRecognition'>Start Recognition</button>\
-		<button id='stopRecognition'>Stop Recognition</button>\
+		<button id='startRecognition' onclick='startVoice()'>Start Recognition</button>\
+		<button id='stopRecognition' onclick='stopVoice()'>Stop Recognition</button>\
 		<textarea id='txtArea'></textarea>\
 	</body>\
 </html>"
