@@ -74,7 +74,7 @@ def testVoice():
 		<script>\
 			var recognition = new webkitSpeechRecognition();\
 			recognition.continuous = true;\
-			recognition.lang = 'en-GB'\
+			recognition.lang = 'en-GB';\
 			recognition.interimResults = true;\
 			recognition.onresult = function (event)\
 			{\
