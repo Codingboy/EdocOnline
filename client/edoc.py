@@ -157,6 +157,7 @@ class WriteBuffer:
 	|	isinstance(self.buffer[i], int)
 	|	self.buffer[i] >= 0
 	|	self.buffer[i] < 256
+	|	folders above outFile are created
 	
 	Note:
 		self.size might be bigger sometimes than self.bufferSize
@@ -165,7 +166,12 @@ class WriteBuffer:
 		self.bufferSize = bufferSize
 		self.buffer = bytearray()
 		self.size = 0
-		self.fOut = open(outFile, "wb")#TODO mkdir
+		index = outFile.rfind("/")
+		if (index != -1):
+			folder = outFile[:index]
+			if (not os.path.exists(folder)):
+				os.makedirs(folder)
+		self.fOut = open(outFile, "wb")
 	def write(self, data):
 		"""
 		Writes data into buffer and file.
@@ -228,10 +234,9 @@ class WriteBuffer:
 		self.fOut.write(self.buffer)
 		self.buffer = bytearray()
 		self.fOut.seek(pos)#TODO preconditions
-class Archive:
+class Archiver:
 	def __init__(self, folder):
 		self.readBuffer = None
-		self.writeBuffer = None
 		self.files = []
 		if (os.path.isfile(file)):
 			self.files = [folder]
@@ -240,7 +245,7 @@ class Archive:
 			for file in files:
 				file = folder + "/" + file
 				self.files.append(file)
-		self.filesize = 0
+		self.file = ""
 	def read():
 		ba = bytearray()
 		if (self.readBuffer is None):
@@ -257,6 +262,7 @@ class Archive:
 							self.files.append(file)
 					elif (os.path.isfile(file)):
 						self.readBuffer = ReadBuffer(file)
+						self.file = file
 						length = len(file)
 						ba.append(length>>8)
 						ba.append(length&255)
@@ -269,11 +275,20 @@ class Archive:
 		else:
 			ba = self.readBuffer.read(1024)
 			if (len(ba) == 0):
-				#TODO delete file
+				self.readBuffer.close()
 				self.readBuffer = None
+				os.remove(self.file)
 				ba = self.read()
 		return ba
+class Dearchiver:
+	def __init__(self, folder):
+		self.writeBuffer = None
+		self.filesize = 0
+		self.buffer = None
 	def write(data):
+		if (self.buffer is not None):
+			data = self.buffer+data
+			self.buffer = None
 		dataLength = len(data)
 		if (self.writeBuffer is None):
 			if (dataLength >= 2):
@@ -294,11 +309,11 @@ class Archive:
 							self.writeBuffer.write(ba)
 							self.filesize -= length
 					else:
-						pass#TODO buffer
+						self.buffer = data
 				else:
-					pass#TODO buffer
+					self.buffer = data
 			else:
-				pass#TODO buffer
+				self.buffer = data
 		else:
 			length = min(dataLength, self.filesize)
 			ba = bytearray()
@@ -309,7 +324,7 @@ class Archive:
 			if (length < dataLength):
 				self.write(data[length:])
 class Compressor:
-	def __init__(self):
+	def __init__(self, folder):
 		self.dict = {}
 		self.uncompressDict = {}
 		for i in range(256):
@@ -317,11 +332,44 @@ class Compressor:
 			self.uncompressDict[i] = [-1, (i,)]
 		self.size = 256
 		self.maxSize = 256*256
+		self.buffer = None
+	def compress(self, data):
+		if (self.buffer is not None):
+			data = self.buffer+data
+			self.buffer = None
+		dataLen = len(data)
+		bytes = ()
+		index = 0#TODO implement
+		while (True):
+			readBytes = readBuffer.read(1)
+			if (len(readBytes) == 0):
+				prev = self.dict[bytes][1]
+				ba = bytearray()
+				ba.append(prev>>8)
+				ba.append(prev&255)
+				writeBuffer.write(ba)
+				break
+			bytes += (readBytes[0],)
+			if (bytes not in self.dict):
+				if (self.size == self.maxSize):
+					prev = self.dict[bytes[:-1]][1]
+					ba = bytearray()
+					ba.append(prev>>8)
+					ba.append(prev&255)
+					writeBuffer.write(ba)
+					bytes = bytes[-1:]
+				else:
+					prev = self.dict[bytes[:-1]][1]
+					self.dict[bytes] = [prev, self.size]
+					self.size += 1
+					ba = bytearray()
+					ba.append(prev>>8)
+					ba.append(prev&255)
+					ba.append(bytes[-1:][0])
+					writeBuffer.write(ba)
+					bytes = ()
 
-	def compressStream(self):
-		pass#TODO
-
-	def decompressStream(self):
+	def decompress(self, data):
 		pass#TODO
 
 	def compressFile(self, inFile, outFile=""):
