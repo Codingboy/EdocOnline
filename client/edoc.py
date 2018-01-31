@@ -235,7 +235,7 @@ class WriteBuffer:
 		self.buffer = bytearray()
 		self.fOut.seek(pos)#TODO preconditions
 class Archiver:
-	def __init__(self, folder):
+	def __init__(self, folder, deleteOnCompletion=False):
 		self.readBuffer = None
 		self.files = []
 		if (os.path.isfile(file)):
@@ -246,6 +246,8 @@ class Archiver:
 				file = folder + "/" + file
 				self.files.append(file)
 		self.file = ""
+		self.deleteOnCompletion = deleteOnCompletion
+		self.readSize = 1024
 	def read():
 		ba = bytearray()
 		if (self.readBuffer is None):
@@ -273,11 +275,12 @@ class Archiver:
 							ba.append((fileSize >> (8*(8-1-i))) & 255)
 						break
 		else:
-			ba = self.readBuffer.read(1024)
+			ba = self.readBuffer.read(self.readSize)
 			if (len(ba) == 0):
 				self.readBuffer.close()
 				self.readBuffer = None
-				os.remove(self.file)
+				if (self.deleteOnCompletion):
+					os.remove(self.file)
 				ba = self.read()
 		return ba
 class Dearchiver:
@@ -285,6 +288,7 @@ class Dearchiver:
 		self.writeBuffer = None
 		self.filesize = 0
 		self.buffer = None
+		self.folder = folder
 	def write(data):
 		if (self.buffer is not None):
 			data = self.buffer+data
@@ -301,7 +305,7 @@ class Dearchiver:
 					if (dataLength >= 2+length+8):
 						for i in range(8):
 							self.filesize += (data[2+length+i]) << (8*(8-1-i))
-							self.writeBuffer = WriteBuffer(file)
+							self.writeBuffer = WriteBuffer(self.folder+"/"file)
 							length = min(dataLength-(2+length+8), self.filesize)
 							ba = bytearray()
 							for i in range(length):
@@ -321,131 +325,108 @@ class Dearchiver:
 				ba.append(data[i])
 			self.writeBuffer.write(ba)
 			self.filesize -= length
-			if (length < dataLength):
+			if (self.filesize == 0):
+				self.writeBuffer.close()
+				self.writeBuffer = None
 				self.write(data[length:])
 class Compressor:
-	def __init__(self, folder):
+	def __init__(self):
 		self.dict = {}
-		self.uncompressDict = {}
 		for i in range(256):
 			self.dict[(i,)] = [-1, i]
-			self.uncompressDict[i] = [-1, (i,)]
 		self.size = 256
 		self.maxSize = 256*256
 		self.buffer = None
 	def compress(self, data):
+		bytes = ()
+		if (self.buffer is not None):
+			bytes = self.buffer
+			self.buffer = None
+		dataLen = len(data)
+		returnValue = bytearray()
+		while (True):
+			if (len(data) == 0):
+				self.buffer = bytes
+				break
+			bytes += (data.pop(0),)
+			if (bytes not in self.dict):
+				if (self.size == self.maxSize):
+					prev = self.dict[bytes[:-1]][1]
+					ba = bytearray()
+					ba.append(prev>>8)
+					ba.append(prev&255)
+					returnValue += ba
+					bytes = bytes[-1:]
+				else:
+					prev = self.dict[bytes[:-1]][1]
+					self.dict[bytes] = [prev, self.size]
+					self.size += 1
+					ba = bytearray()
+					ba.append(prev>>8)
+					ba.append(prev&255)
+					ba.append(bytes[-1:][0])
+					returnValue += ba
+					bytes = ()
+		return returnValue
+	def close(self):
+		bytes = ()
+		if (self.buffer is not None):
+			bytes = self.buffer
+			self.buffer = None
+		if (len(bytes) > 0):
+			prev = self.dict[bytes][1]
+			ba = bytearray()
+			ba.append(prev>>8)
+			ba.append(prev&255)
+			return ba
+class Decompressor:
+	def __init__(self):
+		self.uncompressDict = {}
+		for i in range(256):
+			self.uncompressDict[i] = [-1, (i,)]
+		self.size = 256
+		self.maxSize = 256*256
+		self.buffer = None
+	def decompress(self, data):
 		if (self.buffer is not None):
 			data = self.buffer+data
 			self.buffer = None
-		dataLen = len(data)
-		bytes = ()
-		index = 0#TODO implement
+		returnValue = bytearray()
 		while (True):
-			readBytes = readBuffer.read(1)
-			if (len(readBytes) == 0):
-				prev = self.dict[bytes][1]
-				ba = bytearray()
-				ba.append(prev>>8)
-				ba.append(prev&255)
-				writeBuffer.write(ba)
-				break
-			bytes += (readBytes[0],)
-			if (bytes not in self.dict):
-				if (self.size == self.maxSize):
-					prev = self.dict[bytes[:-1]][1]
-					ba = bytearray()
-					ba.append(prev>>8)
-					ba.append(prev&255)
-					writeBuffer.write(ba)
-					bytes = bytes[-1:]
-				else:
-					prev = self.dict[bytes[:-1]][1]
-					self.dict[bytes] = [prev, self.size]
-					self.size += 1
-					ba = bytearray()
-					ba.append(prev>>8)
-					ba.append(prev&255)
-					ba.append(bytes[-1:][0])
-					writeBuffer.write(ba)
-					bytes = ()
-
-	def decompress(self, data):
-		pass#TODO
-
-	def compressFile(self, inFile, outFile=""):
-		if (outFile == ""):
-			outFile = inFile+".compressed"
-		readBuffer = ReadBuffer(inFile, 1024)
-		writeBuffer = WriteBuffer(outFile, 1024)
-		bytes = ()
-		while (True):
-			readBytes = readBuffer.read(1)
-			if (len(readBytes) == 0):
-				prev = self.dict[bytes][1]
-				ba = bytearray()
-				ba.append(prev>>8)
-				ba.append(prev&255)
-				writeBuffer.write(ba)
-				break
-			bytes += (readBytes[0],)
-			if (bytes not in self.dict):
-				if (self.size == self.maxSize):
-					prev = self.dict[bytes[:-1]][1]
-					ba = bytearray()
-					ba.append(prev>>8)
-					ba.append(prev&255)
-					writeBuffer.write(ba)
-					bytes = bytes[-1:]
-				else:
-					prev = self.dict[bytes[:-1]][1]
-					self.dict[bytes] = [prev, self.size]
-					self.size += 1
-					ba = bytearray()
-					ba.append(prev>>8)
-					ba.append(prev&255)
-					ba.append(bytes[-1:][0])
-					writeBuffer.write(ba)
-					bytes = ()
-		readBuffer.close()
-		writeBuffer.close()
-		os.remove(inFile)
-
-	def decompressFile(self, inFile, outFile=""):
-		if (outFile == ""):
-			outFile = inFile[:-11]
-		readBuffer = ReadBuffer(inFile, 1024)
-		writeBuffer = WriteBuffer(outFile, 1024)
-		while (True):
-			ba = bytearray()
-			readBytes = readBuffer.read(1)
-			if (len(readBytes) == 0):
-				break
-			ba.append(readBytes[0])
-			ba.append(readBuffer.read(1)[0])
+			reqiredLength = 3
 			if (self.size == self.maxSize):
-				index = (ba[0])<<8
-				index += ba[1]
-				bytes = self.uncompressDict[index][1]
+				reqiredLength = 2
+			if (len(data) >= reqiredLength):
 				ba = bytearray()
-				for b in bytes:
-					ba.append(b)
-				writeBuffer.write(ba)
+				ba.append(data.pop(0))
+				ba.append(data.pop(0))
+				if (self.size == self.maxSize):
+					index = (ba[0])<<8
+					index += ba[1]
+					bytes = self.uncompressDict[index][1]
+					for b in bytes:
+						returnValue.append(b)
+				else:
+					ba.append(data.pop(0))
+					prev = (ba[0])<<8
+					prev += ba[1]
+					bytes = self.uncompressDict[prev][1]
+					bytes += (ba[2],)
+					self.uncompressDict[self.size] = [prev, bytes]
+					self.size += 1
+					for b in bytes:
+						returnValue.append(b)
 			else:
-				ba.append(readBuffer.read(1)[0])
-				prev = (ba[0])<<8
-				prev += ba[1]
-				bytes = self.uncompressDict[prev][1]
-				bytes += (ba[2],)
-				self.uncompressDict[self.size] = [prev, bytes]
-				self.size += 1
-				ba = bytearray()
-				for b in bytes:
-					ba.append(b)
-				writeBuffer.write(ba)
-		readBuffer.close()
-		writeBuffer.close()
-		os.remove(inFile)
-
+				self.buffer = data
+				return returnValue
+	def close(self):
+		self.decompress(bytearray())
+class Encoder:
+	def __init__(self):
+		pass
+class Decoder:
+	def __init__(self):
+		pass
 class SBox:
 	"""
 	SBox is a substitution cipher.

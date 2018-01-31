@@ -13,11 +13,14 @@ Welcome to Edoc's documentation!
    sbox
    pbox
    spbox
-   edoc
    readbuffer
    writebuffer
-   compressor
    archiver
+   dearchiver
+   compressor
+   decompressor
+   encoder
+   decoder
    cli
 
 Indices and tables
