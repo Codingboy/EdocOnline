@@ -9,6 +9,7 @@ import math
 import unittest
 import sys
 import threading
+from typing import Dict, Tuple, List
 
 class ReadBuffer:
 	"""
@@ -305,7 +306,7 @@ class Dearchiver:
 					if (dataLength >= 2+length+8):
 						for i in range(8):
 							self.filesize += (data[2+length+i]) << (8*(8-1-i))
-							self.writeBuffer = WriteBuffer(self.folder+"/"file)
+							self.writeBuffer = WriteBuffer(self.folder+"/"+file)
 							length = min(dataLength-(2+length+8), self.filesize)
 							ba = bytearray()
 							for i in range(length):
@@ -432,32 +433,29 @@ class SBox:
 	SBox is a substitution cipher.
 		
 	Attributes:
-		encodeMap (list): lookuptable used to encode data
-		decodeMap (list): lookuptable used to decode data
+		encodeMap: lookuptable used to encode data
+		decodeMap: lookuptable used to decode data
 		
 	Parameters:
-		pw (list): password
+		pw: password
 		
 	| **Pre:**
 	|	len(pw) == 256
-	|	isinstance(pw[i], int)
 	|	pw[i] >= 0
 	|	pw[i] < 256
 		
 	| **Post:**
 	|	len(self.encodeMap) == 256
-	|	isinstance(self.encodeMap[i], int)
 	|	self.encodeMap[i] >= 0
 	|	self.encodeMap[i] < 256
 	|	len(self.decodeMap) == 256
-	|	isinstance(self.decodeMap[i], int)
 	|	self.decodeMap[i] >= 0
 	|	self.decodeMap[i] < 256
 	"""
 
-	def __init__(self, pw):
-		self.encodeMap = [-1]*256
-		self.decodeMap = [-1]*256
+	def __init__(self, pw:List[int]):
+		self.encodeMap:List[int] = [-1]*256
+		self.decodeMap:List[int] = [-1]*256
 		index = 0
 		for i in range(256):
 			emptyCounter = 0
@@ -472,15 +470,15 @@ class SBox:
 		for i in range(256):
 			self.decodeMap[self.encodeMap[i]] = i
 
-	def encode(self, plain):
+	def encode(self, plain:int) -> int:
 		"""
 		Encodes a single plain number.
 		
 		Parameters:
-			plain (int): plain number
+			plain: plain number
 		
 		Returns:
-			int: encoded number
+			encoded number
 			
 		| **Pre:**
 		|	plain >= 0
@@ -492,15 +490,15 @@ class SBox:
 		"""
 		return self.encodeMap[plain]
 
-	def decode(self, encoded):
+	def decode(self, encoded:int) -> int:
 		"""
 		Decodes a single encoded number.
 		
 		Parameters:
-			encoded (int): encoded number
+			encoded: encoded number
 		
 		Returns:
-			int: decoded number
+			decoded number
 			
 		| **Pre:**
 		|	encoded >= 0
@@ -517,31 +515,28 @@ class PBox:
 	PBox is a transposition cipher.
 		
 	Attributes:
-		encodeMap (list): lookuptable used to encode data
-		decodeMap (list): lookuptable used to decode data
+		encodeMap: lookuptable used to encode data
+		decodeMap: lookuptable used to decode data
 		
 	Parameters:
-		pw (list): password
+		pw: password
 		
 	| **Pre:**
 	|	len(pw) == 2048
-	|	isinstance(pw[i], int)
 	|	pw[i] >= 0
 	|	pw[i] < 256
 		
 	| **Post:**
 	|	len(self.encodeMap) == 2048
-	|	isinstance(self.encodeMap[i], int)
 	|	self.encodeMap[i] >= 0
 	|	self.encodeMap[i] < 2048
 	|	len(self.decodeMap) == 2048
-	|	isinstance(self.decodeMap[i], int)
 	|	self.decodeMap[i] >= 0
 	|	self.decodeMap[i] < 2048
 	"""
-	def __init__(self, pw):
-		self.encodeMap = [-1]*(256*8)
-		self.decodeMap = [-1]*(256*8)
+	def __init__(self, pw:List[int]):
+		self.encodeMap:List[int] = [-1]*(256*8)
+		self.decodeMap:List[int] = [-1]*(256*8)
 		index = 0
 		for i in range(256*8):
 			emptyCounter = 0
@@ -556,30 +551,26 @@ class PBox:
 		for i in range(256*8):
 			self.decodeMap[self.encodeMap[i]] = i
 
-	def encode(self, plain, seed):
+	def encode(self, plain:List[int], seed:int) -> List[int]:
 		"""
 		Encodes a block of plain numbers.
 		
 		Parameters:
-			plain (list): block of plain numbers
-			seed (list): seed
+			plain: block of plain numbers
+			seed: seed
 		
 		Returns:
-			list: block of encoded numbers
+			block of encoded numbers
 			
 		| **Pre:**
 		|	len(plain) == 256
-		|	isinstance(plain[i], int)
 		|	plain[i] >= 0
 		|	plain[i] < 256
-		|	len(seed) == 256
-		|	isinstance(seed[i], int)
-		|	seed[i] >= 0
-		|	seed[i] < 256
+		|	seed >= 0
+		|	seed < 256
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 		"""
@@ -593,30 +584,26 @@ class PBox:
 					encoded[index8] = encoded[index8] + (1<<(index%8))
 		return encoded
 
-	def decode(self, encoded, seed):
+	def decode(self, encoded:List[int], seed:int) -> List[int]:
 		"""
 		Decodes a block of encoded numbers.
 		
 		Parameters:
-			encoded (list): block of encoded numbers
-			seed (list): seed
+			encoded: block of encoded numbers
+			seed: seed
 		
 		Returns:
-			list: block of decoded numbers
+			block of decoded numbers
 			
 		| **Pre:**
 		|	len(encoded) == 256
-		|	isinstance(encoded[i], int)
 		|	encoded[i] >= 0
 		|	encoded[i] < 256
-		|	len(seed) == 256
-		|	isinstance(seed[i], int)
-		|	seed[i] >= 0
-		|	seed[i] < 256
+		|	seed >= 0
+		|	seed < 256
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 		"""
@@ -637,39 +624,35 @@ class SPBox:
 	SPBox is a substitution-permutation network.
 		
 	Attributes:
-		sBoxes (list): list of SBoxes used for substitution
-		seed (list): seed
-		pBox (PBox): PBox used for permutation
+		sBoxes: list of SBoxes used for substitution
+		seed: seed
+		pBox: PBox used for permutation
 		
 	Parameters:
-		pw (list): password
-		seed (list): seed
+		pw: password
+		seed: seed
 		
 	| **Pre:**
 	|	len(pw) == 4096
-	|	isinstance(pw[i], int)
 	|	pw[i] >= 0
 	|	pw[i] < 256
 	|	len(seed) == 256
-	|	isinstance(seed[i], int)
 	|	seed[i] >= 1
 	|	seed[i] < 256
 		
 	| **Post:**
 	|	len(self.sBoxes) == 8
-	|	isinstance(self.sBoxes[i], SBox)
 	|	len(self.seed) == 256
-	|	isinstance(self.seed[i], int)
 	|	self.seed[i] >= 1
 	|	self.seed[i] < 256
 	"""
-	def __init__(self, pw, seed=None):
-		self.sBoxes = [None]*8
+	def __init__(self, pw:List[int], seed:List[int]=None):
+		self.sBoxes:List[SBox] = [None]*8
 		if (seed is None):
 			seed = [0]*256
 			for i in range(256):
 				seed[i] = randint(1, 255)
-		self.seed = deepcopy(seed)
+		self.seed:List[int] = deepcopy(seed)
 		for s in range(8):
 			spw = [0]*256
 			for i in range(256):
@@ -678,23 +661,22 @@ class SPBox:
 		ppw = [0]*2048
 		for i in range(2048):
 			ppw[i] = pw[8*256+i]
-		self.pBox = PBox(ppw)
+		self.pBox:PBox = PBox(ppw)
 
-	def encodeRound(self, plain, round, pSeed):
+	def encodeRound(self, plain:List[int], round:int, pSeed:int) -> List[int]:
 		"""
 		Encodes a block of plain numbers.
 		
 		Parameters:
-			plain (list): block of plain numbers
-			round (int): iteration of encode
-			pSeed (int): seed for PBox
+			plain: block of plain numbers
+			round: iteration of encode
+			pSeed: seed for PBox
 		
 		Returns:
-			list: block of encoded numbers
+			block of encoded numbers
 			
 		| **Pre:**
 		|	len(plain) == 256
-		|	isinstance(plain[i], int)
 		|	plain[i] >= 0
 		|	plain[i] < 256
 		|	round >= 0
@@ -704,7 +686,6 @@ class SPBox:
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 		"""
@@ -714,25 +695,24 @@ class SPBox:
 			encoded[i] = plain[i] ^ self.sBoxes[round].encodeMap[i] ^ seedAtI
 			for j in range(8):
 				if ((seedAtI & (1<<j)) != 0):
-					encoded[i] = self.sBoxes[j].encodeMap[encoded[i]]##!replacement for SBox.encode() to improve performance
+					encoded[i] = self.sBoxes[j].encodeMap[encoded[i]]#replacement for SBox.encode() to improve performance
 		encoded = self.pBox.encode(encoded, pSeed)
 		return encoded
 
-	def decodeRound(self, encoded, round, pSeed):
+	def decodeRound(self, encoded:List[int], round:int, pSeed:int) -> List[int]:
 		"""
 		Decodes a block of encoded numbers.
 		
 		Parameters:
-			encoded (list): block of encoded numbers
-			round (int): iteration of decode
-			pSeed (int): seed for PBox
+			encoded: block of encoded numbers
+			round: iteration of decode
+			pSeed: seed for PBox
 		
 		Returns:
-			list: block of decoded numbers
+			block of decoded numbers
 			
 		| **Pre:**
 		|	len(encoded) == 256
-		|	isinstance(encoded[i], int)
 		|	encoded[i] >= 0
 		|	encoded[i] < 256
 		|	round >= 0
@@ -742,7 +722,6 @@ class SPBox:
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 		"""
@@ -756,25 +735,23 @@ class SPBox:
 			decoded[i] = decoded[i] ^ self.sBoxes[round].encodeMap[i] ^ seedAtI
 		return decoded
 
-	def encodeRounds(self, plain):
+	def encodeRounds(self, plain:List[int]) -> List[int]:#TODO rename to encode
 		"""
 		Encodes a block of plain numbers.
 		
 		Parameters:
-			plain (list): block of plain numbers
+			plain: block of plain numbers
 		
 		Returns:
-			list: block of encoded numbers
+			block of encoded numbers
 			
 		| **Pre:**
 		|	len(plain) == 256
-		|	isinstance(plain[i], int)
 		|	plain[i] >= 0
 		|	plain[i] < 256
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 			
@@ -793,25 +770,23 @@ class SPBox:
 				self.seed[i] = 1
 		return encoded
 
-	def decodeRounds(self, encoded):
+	def decodeRounds(self, encoded:List[int]) -> List[int]:#TODO rename to decode
 		"""
 		Decodes a block of encoded numbers.
 		
 		Parameters:
-			encoded (list): block of encoded numbers
+			encoded: block of encoded numbers
 		
 		Returns:
-			list: block of decoded numbers
+			block of decoded numbers
 			
 		| **Pre:**
 		|	len(encoded) == 256
-		|	isinstance(encoded[i], int)
 		|	encoded[i] >= 0
 		|	encoded[i] < 256
 			
 		| **Post:**
 		|	len(return) == 256
-		|	isinstance(return[i], int)
 		|	return[i] >= 0
 		|	return[i] < 256
 			
@@ -831,7 +806,7 @@ class SPBox:
 				self.seed[i] = 1
 		return decoded
 
-	def encode(self, plain):
+	def encode(self, plain):#TODO remove
 		"""
 		Encodes a block of plain numbers.
 		
@@ -873,7 +848,7 @@ class SPBox:
 				encoded.append(encodedPart[i])
 		return {"length":length, "message":encoded}
 
-	def decode(self, encodedJSON):
+	def decode(self, encodedJSON):#TODO remove
 		"""
 		Decodes a container with encoded numbers.
 		
@@ -953,7 +928,7 @@ class SPBox:
 		"""
 		for i in range(256):
 			self.seed[i] = seed[i]
-
+#TODO change general parameter policy: all parameters may be edited by functions, no deepcopy needed
 class Edoc:
 	"""
 	"""

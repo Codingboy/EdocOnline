@@ -1,0 +1,8 @@
+﻿client/edoc.exe
+client/setup.exe
+client/build/*
+client/img/Thumbs.db
+static/Thumbs.db
+*.sqlite
+*.log
+client/__pycache__/*
